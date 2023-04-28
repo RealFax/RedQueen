@@ -93,6 +93,32 @@ service Locker {
 // description:
 // the service bridge will create a bridge between a and b services for streaming data
 
-service ServiceBridge {
+message RegistryServiceRequest {}
+message RegistryServiceResponse {}
 
+message DestroyServiceRequest {}
+message DestroyServiceResponse {}
+
+message QueryServiceRequest {}
+message QueryServiceResponse {}
+
+message ConnectServiceRequest {}
+message ConnectServiceResponse {}
+
+message PipelineServiceRequest {}
+message PipelineServiceResponse {}
+
+// TODO interface
+// Register
+// Destroy
+// Query
+// Connect
+// Pipeline (stream)
+
+service ServiceBridge {
+  rpc Register(RegistryServiceRequest) returns (RegistryServiceResponse) {}
+  rpc Destroy(DestroyServiceRequest) returns (DestroyServiceResponse) {}
+  rpc Query(QueryServiceRequest) returns (QueryServiceResponse) {}
+  rpc Connect (ConnectServiceRequest) returns (ConnectServiceResponse) {}
+  rpc Pipeline (stream PipelineServiceRequest) returns (stream PipelineServiceResponse) {}
 }
