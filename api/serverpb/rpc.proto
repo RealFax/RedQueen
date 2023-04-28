@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package serverpb;
+
+message ResponseHeader {
+  // cluster_id is the ID of the cluster which sent the response.
+  uint64 cluster_id = 1;
+
+  // reserve field
+  uint64 revision = 2;
+
+  // raft_term is the raft term when the request was applied.
+  uint64 raft_term = 3;
+}
+
+// --------------- KV store --------------- //
+message SetRequest {
+  // key is the key, in bytes, to set into the key-value store.
+  bytes key = 1;
+
+  // value is the value, in bytes, to associate with the key in the key-value store.
+  bytes value = 2;
+
+  // expire indicates the expire time of this key-value store.
+  // 0 means never expire, the unit is second.
+  uint32 expire = 3;
+
+  bool ignore_value = 4;
+
+  bool ignore_expire = 5;
+
+  // namespace means the same key-value store can exist in different namespaces
+  optional string namespace = 6;
+}
+
+message SetResponse {
+  ResponseHeader header = 1;
+}
+
+message DeleteRequest {
+  // key is the key, in bytes, to delete into the key-value store.
+  bytes key = 1;
+
+  // namespace means the same key-value store can exist in different namespaces
+  optional string namespace = 2;
+}
+
+message DeleteResponse {
+  ResponseHeader header = 1;
+}
+
+service KV {
+  rpc Set(SetRequest) returns (SetResponse) {}
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+}
+
+// --------------- Locker --------------- //
+message NewLockRequest {
+  optional string lock_id = 1;
+  optional uint32 deadline = 2;
+}
+
+message NewLockResponse {
+  ResponseHeader header = 1;
+  string lock_id = 2;
+  uint32 deadline = 3;
+}
+
+message LockRequest {
+  string lock_id = 1;
+}
+
+message LockResponse {
+  ResponseHeader header = 1;
+}
+
+message UnlockRequest {
+  string lock_id = 1;
+}
+
+message UnlockResponse {
+  ResponseHeader header = 1;
+}
+
+service Locker {
+  rpc New(NewLockRequest) returns (NewLockResponse) {}
+  rpc Lock(LockRequest) returns (LockResponse) {}
+  rpc Unlock(UnlockRequest) returns (UnlockResponse) {}
+}
+
+// --------------- Service bridge --------------- //
+
+// description:
+// the service bridge will create a bridge between a and b services for streaming data
+
+service ServiceBridge {
+
+}
