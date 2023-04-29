@@ -55,6 +55,10 @@ func (l *Mutex) Unlock() error {
 //	}
 //}
 
+// TryLock tries to lock m and reports whether it succeeded.
+//
+// Note that if the mutex is not released before reaching the Deadline
+// it will wait until it is released, and it maybe not succeed
 func (l *Mutex) TryLock() bool {
 	notify, err := l.store.Watch([]byte(l.UUID))
 	if err != nil {
