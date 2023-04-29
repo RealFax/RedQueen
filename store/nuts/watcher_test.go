@@ -52,3 +52,55 @@ func TestWatcher(t *testing.T) {
 
 	time.Sleep(time.Second * 1)
 }
+
+func TestStoreAPI_Watch(t *testing.T) {
+	db, err := nuts.New(nuts.Config{
+		NodeNum: 3,
+		Sync:    true,
+		DataDir: "/tmp/nuts",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// watch before set, strict mode must be disabled first
+	nuts.DisableStrictMode()
+
+	notify, err := db.Watch(key[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		t.Log("[+] Started watch")
+		for {
+			select {
+			case value := <-notify.Notify():
+				t.Logf("Seq: %d, Timestamp: %d, Data: %s", value.Seq, value.Timestamp, *value.Data)
+			case <-ctx.Done():
+				t.Log("[+] End watch")
+				notify.Close()
+				return
+			}
+		}
+	}()
+
+	time.Sleep(time.Second * 1)
+
+	for i := 0; i < 10; i++ {
+		if err = db.Set(key[0], []byte("Hello, Watcher")); err != nil {
+			t.Fatal("set failed:", err)
+		}
+		time.Sleep(time.Millisecond * 300)
+	}
+
+	t.Log("[+] waiting watcher...")
+
+	time.Sleep(time.Second * 1)
+
+	cancel()
+
+	time.Sleep(time.Second * 1)
+}

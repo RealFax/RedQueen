@@ -15,6 +15,10 @@ type WatcherNotify struct {
 	UUID          string
 }
 
+func (n *WatcherNotify) Notify() chan *store.WatchValue {
+	return n.Values
+}
+
 func (n *WatcherNotify) Close() error {
 	n.unwatchedFunc()
 	close(n.Values)
