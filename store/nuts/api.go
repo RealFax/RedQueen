@@ -72,6 +72,19 @@ func (s *storeAPI) Del(key []byte) error {
 	})
 }
 
+func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
+	if strictMode {
+		// check watch key does it exist
+		if err := s.db.View(func(tx *nutsdb.Tx) error {
+			_, err := tx.Get(s.namespace, key)
+			return err
+		}); err != nil {
+			return nil, errors.Wrap(err, "strict")
+		}
+	}
+	return s.watcherChild.Watch(key), nil
+}
+
 func (s *storeAPI) GetNamespace() string {
 	return s.namespace
 }

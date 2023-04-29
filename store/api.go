@@ -19,6 +19,11 @@ func (v *WatchValue) Deleted() bool {
 	return v.Data == nil
 }
 
+type WatcherNotify interface {
+	Notify() chan *WatchValue
+	Close() error
+}
+
 type Base interface {
 	GetNamespace() string
 	Get(key []byte) (value *Value, err error)
@@ -28,7 +33,7 @@ type Base interface {
 	SetEX(key, value []byte) error
 	Del(key []byte) error
 
-	// Watch(ctx context.Context, key []byte) (notify chan *WatchValue, err error)
+	Watch(key []byte) (notify WatcherNotify, err error)
 }
 
 type Namespace Base
