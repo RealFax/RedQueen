@@ -102,9 +102,14 @@ func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
 func (c *WatcherChild) Update(key, value []byte) {
 	watchKey := WatchKey(key)
 
+	var valuePtr *[]byte
+	if value != nil {
+		valuePtr = &value
+	}
+
 	c.Channels.Range(func(key, channel any) bool {
 		if watchKey == key {
-			channel.(*WatcherChannel).UpdateValue(&value)
+			channel.(*WatcherChannel).UpdateValue(valuePtr)
 			return false
 		}
 		return true
