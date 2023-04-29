@@ -16,7 +16,14 @@ type Config struct {
 }
 
 type storeAPI struct {
-	db        *nutsdb.DB
+	db *nutsdb.DB
+
+	// root watcher
+	watcher *Watcher
+
+	// watcherChild for the current namespace
+	watcherChild *WatcherChild
+
 	mu        sync.Mutex
 	namespace string
 }
@@ -31,8 +38,13 @@ func New(cfg Config) (store.Store, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create store session")
 	}
+
+	rootWatcher := &Watcher{}
+
 	return &storeAPI{
-		db:        db,
-		namespace: DefaultNamespace,
+		db:           db,
+		watcher:      rootWatcher,
+		watcherChild: rootWatcher.Namespace(DefaultNamespace),
+		namespace:    DefaultNamespace,
 	}, nil
 }

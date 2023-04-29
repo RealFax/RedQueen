@@ -35,6 +35,7 @@ func TestWatcher(t *testing.T) {
 				case value := <-notify.Values:
 					t.Logf("ClientID: %d, Seq: %d, Timestamp: %d, Data: %s", clientID, value.Seq, value.Timestamp, *value.Data)
 				case <-ctx.Done():
+					notify.Close()
 					t.Logf("Stop recv, ClientID: %d", clientID)
 					return
 				}

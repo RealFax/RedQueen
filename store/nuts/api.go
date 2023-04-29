@@ -28,7 +28,12 @@ func (s *storeAPI) Get(key []byte) (*store.Value, error) {
 
 func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
 	return s.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.Put(s.namespace, key, value, ttl)
+		if err := tx.Put(s.namespace, key, value, ttl); err != nil {
+			return err
+		}
+		// notify watcher key-value update
+		s.watcherChild.Update(key, value)
+		return nil
 	})
 }
 
@@ -42,7 +47,14 @@ func (s *storeAPI) SetEXWithTTL(key, value []byte, ttl uint32) error {
 		if err == nil {
 			return store.ErrKeyAlreadyExists
 		}
-		return tx.Put(s.namespace, key, value, ttl)
+
+		if err = tx.Put(s.namespace, key, value, ttl); err != nil {
+			return err
+		}
+
+		// notify watcher key-value update
+		s.watcherChild.Update(key, value)
+		return nil
 	})
 }
 
@@ -52,7 +64,11 @@ func (s *storeAPI) SetEX(key, value []byte) error {
 
 func (s *storeAPI) Del(key []byte) error {
 	return s.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.Delete(s.namespace, key)
+		if err := tx.Delete(s.namespace, key); err != nil {
+			return err
+		}
+		s.watcherChild.Update(key, nil)
+		return nil
 	})
 }
 
@@ -65,8 +81,10 @@ func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
 		return nil, errors.New("conflicts with the current namespace")
 	}
 	return &storeAPI{
-		db:        s.db,
-		mu:        sync.Mutex{},
-		namespace: namespace,
+		db:           s.db,
+		watcher:      s.watcher,
+		watcherChild: s.watcher.Namespace(namespace),
+		mu:           sync.Mutex{},
+		namespace:    namespace,
 	}, nil
 }
