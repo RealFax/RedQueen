@@ -40,21 +40,22 @@ func (l *Mutex) Unlock() error {
 
 func (l *Mutex) TryLock(deadline time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	go func() {
-		var n *big.Int
-		for {
+	for {
+		select {
+		case <-ctx.Done():
+			cancel()
+			return ctx.Err()
+		default:
 			// success locked
 			if err := l.Lock(); err == nil {
 				cancel()
-				return
+				return nil
 			}
 			// random time slice
-			n, _ = rand.Int(rand.Reader, big.NewInt(1000))
+			n, _ := rand.Int(rand.Reader, big.NewInt(1000))
 			time.Sleep(time.Microsecond * time.Duration(n.Int64()))
 		}
-	}()
-	<-ctx.Done()
-	return ctx.Err()
+	}
 }
 
 func NewMutex(s store.Store) (*Mutex, error) {
