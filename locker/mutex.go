@@ -1,9 +1,6 @@
 package locker
 
 import (
-	"context"
-	"crypto/rand"
-	"math/big"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,24 +35,46 @@ func (l *Mutex) Unlock() error {
 	return nil
 }
 
-func (l *Mutex) TryLock(deadline time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	for {
-		select {
-		case <-ctx.Done():
-			cancel()
-			return ctx.Err()
-		default:
-			// success locked
-			if err := l.Lock(); err == nil {
-				cancel()
-				return nil
-			}
-			// random time slice
-			n, _ := rand.Int(rand.Reader, big.NewInt(1000))
-			time.Sleep(time.Microsecond * time.Duration(n.Int64()))
-		}
+//func (l *Mutex) TryLock(deadline time.Duration) error {
+//	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+//	for {
+//		select {
+//		case <-ctx.Done():
+//			cancel()
+//			return ctx.Err()
+//		default:
+//			// success locked
+//			if err := l.Lock(); err == nil {
+//				cancel()
+//				return nil
+//			}
+//			// random time slice
+//			n, _ := rand.Int(rand.Reader, big.NewInt(1000))
+//			time.Sleep(time.Microsecond * time.Duration(n.Int64()))
+//		}
+//	}
+//}
+
+func (l *Mutex) TryLock() bool {
+	notify, err := l.store.Watch([]byte(l.UUID))
+	if err != nil {
+		return false
 	}
+	defer notify.Close()
+
+	// There may be one or more clients waiting for the mutex,
+	// but we are now watched for this lock to be removed,
+	// and can try to compete for that mutex after the lock is deleted
+	value := <-notify.Notify()
+	if !value.Deleted() {
+		return false
+	}
+
+	if err = l.Lock(); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func NewMutex(s store.Store) (*Mutex, error) {
