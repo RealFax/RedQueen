@@ -108,12 +108,16 @@ message ConnectServiceResponse {}
 message PipelineServiceRequest {}
 message PipelineServiceResponse {}
 
+message HealthCheckServiceRequest {}
+message HealthCheckServiceResponse {}
+
 // TODO interface
 // Register
 // Destroy
 // Query
 // Connect
 // Pipeline (stream)
+// HealthCheck (stream)
 
 service ServiceBridge {
   rpc Register(RegistryServiceRequest) returns (RegistryServiceResponse) {}
@@ -121,4 +125,5 @@ service ServiceBridge {
   rpc Query(QueryServiceRequest) returns (QueryServiceResponse) {}
   rpc Connect (ConnectServiceRequest) returns (ConnectServiceResponse) {}
   rpc Pipeline (stream PipelineServiceRequest) returns (stream PipelineServiceResponse) {}
+  rpc HealthCheck(stream HealthCheckServiceRequest) returns (stream HealthCheckServiceResponse) {}
 }

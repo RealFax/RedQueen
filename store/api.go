@@ -8,6 +8,12 @@ func NewValue(data []byte) *Value {
 	return &Value{Data: data}
 }
 
+type WatchValue struct {
+	Seq       uint64
+	Timestamp int64
+	Data      *[]byte
+}
+
 type Base interface {
 	GetNamespace() string
 	Get(key []byte) (value *Value, err error)
@@ -16,6 +22,8 @@ type Base interface {
 	Set(key, value []byte) error
 	SetEX(key, value []byte) error
 	Del(key []byte) error
+
+	// Watch(ctx context.Context, key []byte) (notify chan *WatchValue, err error)
 }
 
 type Namespace Base
