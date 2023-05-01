@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	Namespace string = "LockerMutex"
-	Deadline         = time.Minute * 10
+	Namespace string = "Locker"
+	Deadline         = time.Second * 30
 )
 
 var (
