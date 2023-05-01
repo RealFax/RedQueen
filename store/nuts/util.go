@@ -2,9 +2,9 @@ package nuts
 
 // WatchKey
 // from: https://en.wikipedia.org/wiki/Jenkins_hash_function (Jenkins' One-At-A-Time hashing)
-func WatchKey(key []byte) (hash int) {
+func WatchKey(key []byte) (hash uint64) {
 	for i := 0; i < len(key); i++ {
-		hash += int(key[i])
+		hash += (uint64)(key[i])
 		hash += hash << 10
 		hash ^= hash >> 6
 	}
