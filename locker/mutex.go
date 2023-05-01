@@ -1,21 +1,26 @@
 package locker
 
 import (
-	"time"
-
-	"github.com/google/uuid"
-
 	"github.com/RealFax/RedQueen/store"
+	"github.com/RealFax/RedQueen/utils"
+	"github.com/google/uuid"
+	"time"
 )
 
 type Mutex struct {
 	store    store.Namespace
 	Deadline time.Duration
-	UUID     string
+	LockID   string
+}
+
+type MutexOption func(*Mutex)
+
+func (l *Mutex) Type() string {
+	return "mutex"
 }
 
 func (l *Mutex) Lock() error {
-	if err := l.store.SetEXWithTTL([]byte(l.UUID), []byte{0x00}, uint32(l.Deadline)); err != nil {
+	if err := l.store.SetEXWithTTL(utils.String2Bytes(l.LockID), []byte{0x00}, uint32(l.Deadline)); err != nil {
 		if err == store.ErrKeyAlreadyExists {
 			return ErrStatusBusy
 		}
@@ -25,11 +30,11 @@ func (l *Mutex) Lock() error {
 }
 
 func (l *Mutex) Unlock() error {
-	val, err := l.store.Get([]byte(l.UUID))
+	val, err := l.store.Get(utils.String2Bytes(l.LockID))
 	if len(val.Data) == 0 || err == store.ErrKeyNotFound {
 		return ErrStatusBusy
 	}
-	if err = l.store.Del([]byte(l.UUID)); err != nil {
+	if err = l.store.Del(utils.String2Bytes(l.LockID)); err != nil {
 		return err
 	}
 	return nil
@@ -60,7 +65,7 @@ func (l *Mutex) Unlock() error {
 // Note that if the mutex is not released before reaching the Deadline
 // it will wait until it is released, and it maybe not succeed
 func (l *Mutex) TryLock() bool {
-	notify, err := l.store.Watch([]byte(l.UUID))
+	notify, err := l.store.Watch(utils.String2Bytes(l.LockID))
 	if err != nil {
 		return false
 	}
@@ -81,14 +86,33 @@ func (l *Mutex) TryLock() bool {
 	return true
 }
 
-func NewMutex(s store.Store) (*Mutex, error) {
+func NewMutex(s store.Store, options ...MutexOption) (*Mutex, error) {
 	ns, err := s.Namespace(Namespace)
 	if err != nil {
 		return nil, err
 	}
-	return &Mutex{
+
+	mutex := &Mutex{
 		store:    ns,
-		UUID:     uuid.New().String(),
+		LockID:   uuid.New().String(),
 		Deadline: Deadline,
-	}, nil
+	}
+
+	for _, option := range options {
+		option(mutex)
+	}
+
+	return mutex, nil
+}
+
+func MutexWithDeadline(deadline time.Duration) func(mutex *Mutex) {
+	return func(mutex *Mutex) {
+		mutex.Deadline = deadline
+	}
+}
+
+func MutexWithCustomID(id string) func(mutex *Mutex) {
+	return func(mutex *Mutex) {
+		mutex.LockID = id
+	}
 }
