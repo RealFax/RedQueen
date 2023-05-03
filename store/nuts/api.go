@@ -7,6 +7,19 @@ import (
 	"sync"
 )
 
+func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
+	if namespace == s.namespace {
+		return nil, errors.New("conflicts with the current namespace")
+	}
+	return &storeAPI{
+		db:           s.db,
+		watcher:      s.watcher,
+		watcherChild: s.watcher.Namespace(namespace),
+		mu:           sync.Mutex{},
+		namespace:    namespace,
+	}, nil
+}
+
 func (s *storeAPI) Close() error {
 	return s.db.Close()
 }
@@ -90,14 +103,5 @@ func (s *storeAPI) GetNamespace() string {
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
-	if namespace == s.namespace {
-		return nil, errors.New("conflicts with the current namespace")
-	}
-	return &storeAPI{
-		db:           s.db,
-		watcher:      s.watcher,
-		watcherChild: s.watcher.Namespace(namespace),
-		mu:           sync.Mutex{},
-		namespace:    namespace,
-	}, nil
+	return s._namespace(namespace)
 }

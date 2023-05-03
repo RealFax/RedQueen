@@ -12,7 +12,9 @@ var strictMode = true
 func EnableStrictMode()  { strictMode = true }
 func DisableStrictMode() { strictMode = false }
 
-const DefaultNamespace = "RedQueen"
+const (
+	DefaultNamespace = "RedQueen"
+)
 
 type Config struct {
 	NodeNum int64

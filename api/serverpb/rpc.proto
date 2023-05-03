@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package serverpb;
 
+// --------------- Public --------------- //
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
   uint64 cluster_id = 1;
