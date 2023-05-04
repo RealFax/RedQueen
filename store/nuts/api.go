@@ -1,9 +1,11 @@
 package nuts
 
 import (
+	"bytes"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/nutsdb/nutsdb"
 	"github.com/pkg/errors"
+	"io"
 	"sync"
 )
 
@@ -54,7 +56,7 @@ func (s *storeAPI) Set(key, value []byte) error {
 	return s.SetWithTTL(key, value, 0)
 }
 
-func (s *storeAPI) SetEXWithTTL(key, value []byte, ttl uint32) error {
+func (s *storeAPI) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	return s.db.Update(func(tx *nutsdb.Tx) error {
 		_, err := tx.Get(s.namespace, key)
 		if err == nil {
@@ -71,8 +73,8 @@ func (s *storeAPI) SetEXWithTTL(key, value []byte, ttl uint32) error {
 	})
 }
 
-func (s *storeAPI) SetEX(key, value []byte) error {
-	return s.SetEXWithTTL(key, value, 0)
+func (s *storeAPI) TrySet(key, value []byte) error {
+	return s.TrySetWithTTL(key, value, 0)
 }
 
 func (s *storeAPI) Del(key []byte) error {
@@ -100,6 +102,13 @@ func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
 
 func (s *storeAPI) GetNamespace() string {
 	return s.namespace
+}
+
+func (s *storeAPI) Snapshot() (io.Reader, error) {
+	buf := &bytes.Buffer{}
+	return buf, s.db.View(func(tx *nutsdb.Tx) error {
+		return s.db.BackupTarGZ(buf)
+	})
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
