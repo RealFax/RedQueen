@@ -1,8 +1,20 @@
 package RedQueen
 
-import "github.com/hashicorp/raft"
+import (
+	"github.com/hashicorp/raft"
+	"io"
+)
 
-type Snapshot struct{}
+type Snapshot struct {
+	io.Reader
+}
 
-func (s *Snapshot) Persist(_ raft.SnapshotSink) error { return nil }
-func (s *Snapshot) Release()                          {}
+func (s *Snapshot) Persist(sink raft.SnapshotSink) error {
+	if _, err := io.Copy(sink, s); err != nil {
+		_ = sink.Cancel()
+		return err
+	}
+	return sink.Close()
+}
+
+func (s *Snapshot) Release() {}

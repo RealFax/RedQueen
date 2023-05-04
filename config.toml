@@ -1,0 +1,52 @@
+[node]
+name = "node-1"
+data-dir = "/tmp/red_queen"
+listen-peer-addr = "127.0.0.1:2539"
+listen-client-addr = "127.0.0.1:2540"
+max-snapshots = 5
+
+
+[cluster]
+    [[cluster.bootstrap]]
+    name = "node-1"
+    peer-addr = "127.0.0.1:2539"
+
+    [[cluster.bootstrap]]
+    name = "node-3"
+    peer-addr = "127.0.0.1:3539"
+
+    [[cluster.bootstrap]]
+    name = "node-1"
+    peer-addr = "127.0.0.1:4539"
+
+# state options
+# new, existing
+state = "new"
+
+token = "red-queen-cluster"
+
+[security]
+enable-tls = false
+tls-cert = ""
+tls-key = ""
+auto-tls = false
+
+enable-peer-tls = false
+peer-tls-cert = ""
+peer-tls-key = ""
+peer-auto-tls = false
+
+[log]
+# logger options
+# zap, capnslog
+logger = ""
+output-dir = "/tmp/red_queen/logs"
+debug = false
+
+[misc]
+pprof = false
+# metrics = "basic"
+# metrics-addr = "localhost:8090"
+
+[auth]
+token = "RED_QUEEN_AUTH_TOKEN"

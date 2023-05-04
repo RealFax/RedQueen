@@ -1,5 +1,7 @@
 package store
 
+import "io"
+
 type Value struct {
 	Data []byte
 }
@@ -28,9 +30,10 @@ type Base interface {
 	GetNamespace() string
 	Get(key []byte) (value *Value, err error)
 	SetWithTTL(key, value []byte, ttl uint32) error
-	SetEXWithTTL(key, value []byte, ttl uint32) error
+	TrySetWithTTL(key, value []byte, ttl uint32) error
 	Set(key, value []byte) error
-	SetEX(key, value []byte) error
+	// TrySet try to set a key-value, returns an error if the key already exists
+	TrySet(key, value []byte) error
 	Del(key []byte) error
 
 	Watch(key []byte) (notify WatcherNotify, err error)
@@ -42,4 +45,6 @@ type Store interface {
 	Base
 	Namespace(namespace string) (Namespace, error)
 	Close() error
+	// Snapshot should be in tar & gzip format
+	Snapshot() (io.Reader, error)
 }

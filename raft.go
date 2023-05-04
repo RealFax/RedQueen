@@ -9,9 +9,22 @@ import (
 	"time"
 )
 
+type Command int32
+
+const (
+	SetWithTTL Command = iota
+	TrySetWithTTL
+	Set
+	TrySet
+	Del
+)
+
 type LogPayload struct {
-	Key   []byte `json:"key"`
-	Value []byte `json:"value"`
+	Command   Command `json:"command" msgpack:"cmd"`
+	TTL       *uint32 `json:"ttl,omitempty" msgpack:"ttl,omitempty"`
+	Namespace string  `json:"namespace,omitempty" msgpack:"ns,omitempty"`
+	Key       []byte  `json:"key,omitempty" msgpack:"k,omitempty"`
+	Value     []byte  `json:"value,omitempty" msgpack:"v,omitempty"`
 }
 
 type RaftConfig struct {

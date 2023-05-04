@@ -20,7 +20,7 @@ func (l *Mutex) Type() string {
 }
 
 func (l *Mutex) Lock() error {
-	if err := l.store.SetEXWithTTL(utils.String2Bytes(l.LockID), []byte{0x00}, uint32(l.Deadline)); err != nil {
+	if err := l.store.TrySetWithTTL(utils.String2Bytes(l.LockID), []byte{0x00}, uint32(l.Deadline)); err != nil {
 		if err == store.ErrKeyAlreadyExists {
 			return ErrStatusBusy
 		}
