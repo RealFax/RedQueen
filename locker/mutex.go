@@ -64,19 +64,27 @@ func (l *Mutex) Unlock() error {
 //
 // Note that if the mutex is not released before reaching the Deadline
 // it will wait until it is released, and it maybe not succeed
-func (l *Mutex) TryLock() bool {
+func (l *Mutex) TryLock(deadline time.Duration) bool {
 	notify, err := l.store.Watch(utils.String2Bytes(l.LockID))
 	if err != nil {
 		return false
 	}
 	defer notify.Close()
 
+	ticker := time.NewTicker(deadline)
+	defer ticker.Stop()
+
+	select {
+	case <-ticker.C:
+		return false
 	// There may be one or more clients waiting for the mutex,
 	// but we are now watched for this lock to be removed,
 	// and can try to compete for that mutex after the lock is deleted
-	value := <-notify.Notify()
-	if !value.Deleted() {
-		return false
+	case value := <-notify.Notify():
+		if !value.Deleted() {
+			return false
+		}
+		break
 	}
 
 	if err = l.Lock(); err != nil {
