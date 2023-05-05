@@ -11,6 +11,7 @@ import (
 
 type KV interface {
 	Set(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
+	Get(context.Context, *serverpb.GetRequest) (*serverpb.GetResponse, error)
 	TrySet(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
 	Delete(context.Context, *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error)
 	Watch(*serverpb.WatchRequest, serverpb.KV_WatchServer) error
@@ -20,13 +21,13 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 
 	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
 		Command: func() Command {
-			if req.IgnoreExpire {
+			if req.IgnoreTtl {
 				return Set
 			}
 			return SetWithTTL
 		}(),
 		TTL: func() *uint32 {
-			return &req.Expire
+			return &req.Ttl
 		}(),
 		Namespace: func() string {
 			if req.Namespace != nil {
@@ -51,6 +52,10 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 			RaftTerm:  atomic.LoadUint64(&s.term),
 		},
 	}, nil
+}
+
+func (s *Server) Get(context.Context, *serverpb.GetRequest) (*serverpb.GetResponse, error) {
+	return nil, nil
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
