@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package serverpb;
 
+option go_package = "./;serverpb";
+
 // --------------- Public --------------- //
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
@@ -50,9 +52,31 @@ message DeleteResponse {
   ResponseHeader header = 1;
 }
 
+message WatchRequest {
+  // key is the key, in bytes, to delete into the key-value store.
+  bytes key = 1;
+  // ignore_errors caused by problems such as key-value being deleted or not existing
+  bool ignore_errors = 2;
+  // namespace means the same key-value store can exist in different namespaces
+  optional string namespace = 3;
+  // buf_size, declare the buffer size of watch
+  optional uint32 buf_size = 4;
+}
+
+message WatchResponse {
+  ResponseHeader header = 1;
+  // update_seq is the updated serial number (current session)
+  uint64 update_seq = 2;
+  // timestamp is the when this value was updated
+  int64 timestamp = 3;
+  bytes data = 4;
+}
+
 service KV {
   rpc Set(SetRequest) returns (SetResponse) {}
+  rpc TrySet(SetRequest) returns (SetResponse) {}
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+  rpc Watch(WatchRequest) returns (stream WatchResponse) {}
 }
 
 // --------------- Locker --------------- //

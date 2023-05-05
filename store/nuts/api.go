@@ -105,6 +105,9 @@ func (s *storeAPI) GetNamespace() string {
 }
 
 func (s *storeAPI) Snapshot() (io.Reader, error) {
+	if err := s.db.Merge(); err != nil {
+		return nil, errors.New("fatal snapshot")
+	}
 	buf := &bytes.Buffer{}
 	return buf, s.db.View(func(tx *nutsdb.Tx) error {
 		return s.db.BackupTarGZ(buf)
