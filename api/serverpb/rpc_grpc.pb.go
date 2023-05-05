@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KVClient interface {
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
+	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	TrySet(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (KV_WatchClient, error)
@@ -39,6 +40,15 @@ func NewKVClient(cc grpc.ClientConnInterface) KVClient {
 func (c *kVClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error) {
 	out := new(SetResponse)
 	err := c.cc.Invoke(ctx, "/serverpb.KV/Set", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+	out := new(GetResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.KV/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +110,7 @@ func (x *kVWatchClient) Recv() (*WatchResponse, error) {
 // for forward compatibility
 type KVServer interface {
 	Set(context.Context, *SetRequest) (*SetResponse, error)
+	Get(context.Context, *GetRequest) (*GetResponse, error)
 	TrySet(context.Context, *SetRequest) (*SetResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	Watch(*WatchRequest, KV_WatchServer) error
@@ -112,6 +123,9 @@ type UnimplementedKVServer struct {
 
 func (UnimplementedKVServer) Set(context.Context, *SetRequest) (*SetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
+}
+func (UnimplementedKVServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedKVServer) TrySet(context.Context, *SetRequest) (*SetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TrySet not implemented")
@@ -149,6 +163,24 @@ func _KV_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{})
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KVServer).Set(ctx, req.(*SetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KV_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.KV/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServer).Get(ctx, req.(*GetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -220,6 +252,10 @@ var KV_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Set",
 			Handler:    _KV_Set_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _KV_Get_Handler,
 		},
 		{
 			MethodName: "TrySet",

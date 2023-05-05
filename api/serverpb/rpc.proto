@@ -24,13 +24,13 @@ message SetRequest {
   // value is the value, in bytes, to associate with the key in the key-value store.
   bytes value = 2;
 
-  // expire indicates the expire time of this key-value store.
-  // 0 means never expire, the unit is second.
-  uint32 expire = 3;
+  // ttl indicates the ttl time of this key-value store.
+  // 0 means never ttl, the unit is second.
+  uint32 ttl = 3;
 
   bool ignore_value = 4;
 
-  bool ignore_expire = 5;
+  bool ignore_ttl = 5;
 
   // namespace means the same key-value store can exist in different namespaces
   optional string namespace = 6;
@@ -38,6 +38,19 @@ message SetRequest {
 
 message SetResponse {
   ResponseHeader header = 1;
+}
+
+message GetRequest {
+  // key is the key, in bytes, to set into the key-value store.
+  bytes key = 1;
+  // namespace means the same key-value store can exist in different namespaces
+  optional string namespace = 2;
+}
+
+message GetResponse {
+  ResponseHeader header = 1;
+  bytes value = 2;
+  optional uint32 ttl = 3;
 }
 
 message DeleteRequest {
@@ -74,6 +87,7 @@ message WatchResponse {
 
 service KV {
   rpc Set(SetRequest) returns (SetResponse) {}
+  rpc Get(GetRequest) returns (GetResponse) {}
   rpc TrySet(SetRequest) returns (SetResponse) {}
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
   rpc Watch(WatchRequest) returns (stream WatchResponse) {}
