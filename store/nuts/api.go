@@ -11,7 +11,8 @@ import (
 
 func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
 	if namespace == s.namespace {
-		return nil, errors.New("conflicts with the current namespace")
+		return s, nil
+		// return nil, errors.New("conflicts with the current namespace")
 	}
 	return &storeAPI{
 		db:           s.db,

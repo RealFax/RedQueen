@@ -12,10 +12,6 @@ var strictMode = true
 func EnableStrictMode()  { strictMode = true }
 func DisableStrictMode() { strictMode = false }
 
-const (
-	DefaultNamespace = "RedQueen"
-)
-
 type Config struct {
 	NodeNum int64
 	Sync    bool
@@ -51,7 +47,7 @@ func New(cfg Config) (store.Store, error) {
 	return &storeAPI{
 		db:           db,
 		watcher:      rootWatcher,
-		watcherChild: rootWatcher.Namespace(DefaultNamespace),
-		namespace:    DefaultNamespace,
+		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
+		namespace:    store.DefaultNamespace,
 	}, nil
 }
