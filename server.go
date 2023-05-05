@@ -17,6 +17,21 @@ type Server struct {
 	raft  *Raft
 }
 
+func (s *Server) currentNamespace(namespace *string) (store.Base, error) {
+	var (
+		err      error
+		storeAPI store.Base = s.store
+	)
+
+	if namespace != nil {
+		if storeAPI, err = s.store.Namespace(*namespace); err != nil {
+			return nil, err
+		}
+	}
+
+	return storeAPI, nil
+}
+
 func (s *Server) raftApply(ctx context.Context, timeout time.Duration, lp *LogPayload) (raft.ApplyFuture, error) {
 	cmd, err := msgpack.Marshal(lp)
 	if err != nil {

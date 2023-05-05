@@ -54,8 +54,25 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 	}, nil
 }
 
-func (s *Server) Get(context.Context, *serverpb.GetRequest) (*serverpb.GetResponse, error) {
-	return nil, nil
+func (s *Server) Get(ctx context.Context, req *serverpb.GetRequest) (*serverpb.GetResponse, error) {
+	storeAPI, err := s.currentNamespace(req.Namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	value, err := storeAPI.Get(req.Key)
+	if err != nil {
+		return nil, err
+	}
+
+	return &serverpb.GetResponse{
+		Header: &serverpb.ResponseHeader{
+			ClusterId: s.clusterID,
+			RaftTerm:  atomic.LoadUint64(&s.term),
+		},
+		Value: value.Data,
+		Ttl:   nil, // unimplemented
+	}, nil
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
@@ -67,16 +84,10 @@ func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serv
 }
 
 func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServer) error {
-	var (
-		// err need status wrapper
-		err      error
-		storeAPI store.Base = s.store
-	)
-	// switch to current namespace
-	if req.Namespace != nil {
-		if storeAPI, err = s.store.Namespace(*req.Namespace); err != nil {
-			return err
-		}
+
+	storeAPI, err := s.currentNamespace(req.Namespace)
+	if err != nil {
+		return err
 	}
 
 	if !req.IgnoreErrors {
