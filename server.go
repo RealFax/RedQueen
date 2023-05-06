@@ -16,7 +16,8 @@ type Server struct {
 
 	store         store.Store
 	lockerBackend locker.Backend
-	raft          *Raft
+
+	raft *Raft
 }
 
 func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {

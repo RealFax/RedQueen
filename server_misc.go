@@ -13,11 +13,11 @@ type LockerBackendWrapper struct {
 	raftApplyFunc func(context.Context, time.Duration, *LogPayload) (raft.ApplyFuture, error)
 }
 
-func (w *LockerBackendWrapper) Get(key []byte) (*store.Value, error) {
+func (w LockerBackendWrapper) Get(key []byte) (*store.Value, error) {
 	return w.store.Get(key)
 }
 
-func (w *LockerBackendWrapper) TrySetWithTTL(key, value []byte, ttl uint32) error {
+func (w LockerBackendWrapper) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	_, err := w.raftApplyFunc(context.Background(), time.Millisecond*500, &LogPayload{
 		Command: TrySetWithTTL,
 		TTL:     &ttl,
@@ -31,7 +31,7 @@ func (w *LockerBackendWrapper) TrySetWithTTL(key, value []byte, ttl uint32) erro
 	return err
 }
 
-func (w *LockerBackendWrapper) Del(key []byte) error {
+func (w LockerBackendWrapper) Del(key []byte) error {
 	_, err := w.raftApplyFunc(context.Background(), time.Millisecond*1000, &LogPayload{
 		Command: Del,
 		Namespace: func() *string {
@@ -43,7 +43,7 @@ func (w *LockerBackendWrapper) Del(key []byte) error {
 	return err
 }
 
-func (w *LockerBackendWrapper) Watch(key []byte) (store.WatcherNotify, error) {
+func (w LockerBackendWrapper) Watch(key []byte) (store.WatcherNotify, error) {
 	return w.store.Watch(key)
 }
 
