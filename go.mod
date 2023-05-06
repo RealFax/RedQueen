@@ -16,6 +16,7 @@ require (
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
@@ -26,5 +27,10 @@ require (
 	github.com/xujiajun/mmap-go v1.0.1 // indirect
 	github.com/xujiajun/utils v0.0.0-20220904132955-5f7c5b914235 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
+	google.golang.org/grpc v1.55.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 )
