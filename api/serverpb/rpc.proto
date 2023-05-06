@@ -4,6 +4,7 @@ package serverpb;
 
 option go_package = "./;serverpb";
 
+
 // --------------- Public --------------- //
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
@@ -138,6 +139,9 @@ message RegistryServiceResponse {}
 message DestroyServiceRequest {}
 message DestroyServiceResponse {}
 
+message KeepAliveServiceRequest {}
+message KeepAliveServiceResponse {}
+
 message QueryServiceRequest {}
 message QueryServiceResponse {}
 
@@ -147,16 +151,21 @@ message ConnectServiceResponse {}
 message PipelineServiceRequest {}
 message PipelineServiceResponse {}
 
-message HealthCheckServiceRequest {}
-message HealthCheckServiceResponse {}
+message HealthCheckSServiceRequest {}
+message HealthCheckSServiceResponse {}
+
+message HealthCheckRServiceRequest {}
+message HealthCheckRServiceResponse {}
 
 // TODO interface
 // Register
 // Destroy
 // Query
+// KeepAlive
 // Connect
 // Pipeline (stream)
-// HealthCheck (stream)
+// HealthCheckSender (client stream)
+// HealthCheckReceiver (server stream)
 
 service ServiceBridge {
   rpc Register(RegistryServiceRequest) returns (RegistryServiceResponse) {}
@@ -164,5 +173,6 @@ service ServiceBridge {
   rpc Query(QueryServiceRequest) returns (QueryServiceResponse) {}
   rpc Connect (ConnectServiceRequest) returns (ConnectServiceResponse) {}
   rpc Pipeline (stream PipelineServiceRequest) returns (stream PipelineServiceResponse) {}
-  rpc HealthCheck(stream HealthCheckServiceRequest) returns (stream HealthCheckServiceResponse) {}
+  rpc HealthCheckSender(stream HealthCheckSServiceRequest) returns (HealthCheckSServiceResponse) {}
+  rpc HealthCheckReceiver(HealthCheckRServiceRequest) returns (stream HealthCheckRServiceResponse) {}
 }

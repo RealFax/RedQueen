@@ -35,7 +35,6 @@ func (s *Server) responseHeader() *serverpb.ResponseHeader {
 }
 
 func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-
 	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
 		Command: func() Command {
 			if req.IgnoreTtl {
