@@ -94,19 +94,9 @@ service KV {
 }
 
 // --------------- Locker --------------- //
-message NewMutexRequest {
-  optional string lock_id = 1;
-  optional uint32 deadline = 2;
-}
-
-message NewMutexResponse {
-  ResponseHeader header = 1;
-  string lock_id = 2;
-  uint32 deadline = 3;
-}
-
 message LockRequest {
   string lock_id = 1;
+  int64 ttl = 2;
 }
 
 message LockResponse {
@@ -123,7 +113,8 @@ message UnlockResponse {
 
 message TryLockRequest {
   string lock_id = 1;
-  optional uint32 deadline = 2;
+  int64 ttl = 2;
+  int64 deadline = 3;
 }
 
 message TryLockResponse {
@@ -131,7 +122,6 @@ message TryLockResponse {
 }
 
 service Locker {
-  rpc New(NewMutexRequest) returns (NewMutexResponse) {}
   rpc Lock(LockRequest) returns (LockResponse) {}
   rpc Unlock(UnlockRequest) returns (UnlockResponse) {}
   rpc TryLock(TryLockRequest) returns (TryLockResponse) {}

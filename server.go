@@ -2,6 +2,7 @@ package RedQueen
 
 import (
 	"context"
+	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
@@ -13,14 +14,15 @@ type Server struct {
 	term      uint64 // [ATOMIC]
 	clusterID uint64
 
-	store store.Store
-	raft  *Raft
+	store         store.Store
+	lockerBackend locker.Backend
+	raft          *Raft
 }
 
-func (s *Server) currentNamespace(namespace *string) (store.Base, error) {
+func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {
 	var (
 		err      error
-		storeAPI store.Base = s.store
+		storeAPI store.Namespace = s.store
 	)
 
 	if namespace != nil {
