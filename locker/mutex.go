@@ -8,9 +8,9 @@ import (
 )
 
 type Mutex struct {
-	store    store.Namespace
-	Deadline time.Duration
-	LockID   string
+	store  Backend
+	TTL    time.Duration
+	LockID string
 }
 
 type MutexOption func(*Mutex)
@@ -20,7 +20,7 @@ func (l *Mutex) Type() string {
 }
 
 func (l *Mutex) Lock() error {
-	if err := l.store.TrySetWithTTL(utils.String2Bytes(l.LockID), []byte{0x00}, uint32(l.Deadline)); err != nil {
+	if err := l.store.TrySetWithTTL(utils.String2Bytes(l.LockID), []byte{}, uint32(l.TTL.Seconds())); err != nil {
 		if err == store.ErrKeyAlreadyExists {
 			return ErrStatusBusy
 		}
@@ -34,10 +34,7 @@ func (l *Mutex) Unlock() error {
 	if len(val.Data) == 0 || err == store.ErrKeyNotFound {
 		return ErrStatusBusy
 	}
-	if err = l.store.Del(utils.String2Bytes(l.LockID)); err != nil {
-		return err
-	}
-	return nil
+	return l.store.Del(utils.String2Bytes(l.LockID))
 }
 
 //func (l *Mutex) TryLock(deadline time.Duration) error {
@@ -62,9 +59,13 @@ func (l *Mutex) Unlock() error {
 
 // TryLock tries to lock m and reports whether it succeeded.
 //
-// Note that if the mutex is not released before reaching the Deadline
+// Note that if the mutex is not released before reaching the deadline
 // it will wait until it is released, and it maybe not succeed
 func (l *Mutex) TryLock(deadline time.Duration) bool {
+	if l.Lock() == nil {
+		return true
+	}
+
 	notify, err := l.store.Watch(utils.String2Bytes(l.LockID))
 	if err != nil {
 		return false
@@ -87,23 +88,18 @@ func (l *Mutex) TryLock(deadline time.Duration) bool {
 		break
 	}
 
-	if err = l.Lock(); err != nil {
+	if l.Lock() != nil {
 		return false
 	}
 
 	return true
 }
 
-func NewMutex(s store.Store, options ...MutexOption) (*Mutex, error) {
-	ns, err := s.Namespace(Namespace)
-	if err != nil {
-		return nil, err
-	}
-
+func NewMutex(s Backend, options ...MutexOption) (*Mutex, error) {
 	mutex := &Mutex{
-		store:    ns,
-		LockID:   uuid.New().String(),
-		Deadline: Deadline,
+		store:  s,
+		LockID: uuid.New().String(),
+		TTL:    TTL,
 	}
 
 	for _, option := range options {
@@ -113,9 +109,9 @@ func NewMutex(s store.Store, options ...MutexOption) (*Mutex, error) {
 	return mutex, nil
 }
 
-func MutexWithDeadline(deadline time.Duration) func(mutex *Mutex) {
+func MutexWithTTL(deadline time.Duration) func(mutex *Mutex) {
 	return func(mutex *Mutex) {
-		mutex.Deadline = deadline
+		mutex.TTL = deadline
 	}
 }
 
@@ -123,4 +119,53 @@ func MutexWithCustomID(id string) func(mutex *Mutex) {
 	return func(mutex *Mutex) {
 		mutex.LockID = id
 	}
+}
+
+func MutexLock(lockID string, ttl int64, backend Backend) error {
+	if err := backend.TrySetWithTTL(utils.String2Bytes(lockID), []byte{}, uint32(time.Duration(ttl).Seconds())); err != nil {
+		if err == store.ErrKeyAlreadyExists {
+			return ErrStatusBusy
+		}
+		return err
+	}
+	return nil
+}
+
+func MutexUnlock(lockID string, backend Backend) error {
+	val, err := backend.Get(utils.String2Bytes(lockID))
+	if len(val.Data) == 0 || err == store.ErrKeyNotFound {
+		return ErrStatusBusy
+	}
+	return backend.Del(utils.String2Bytes(lockID))
+}
+
+func MutexTryLock(lockID string, ttl int64, deadline int64, backend Backend) bool {
+	if MutexLock(lockID, ttl, backend) == nil {
+		return true
+	}
+
+	notify, err := backend.Watch(utils.String2Bytes(lockID))
+	if err != nil {
+		return false
+	}
+	defer notify.Close()
+
+	ticker := time.NewTicker(time.Duration(deadline))
+	defer ticker.Stop()
+
+	select {
+	case <-ticker.C:
+		return false
+	case value := <-notify.Notify():
+		if !value.Deleted() {
+			return false
+		}
+		break
+	}
+
+	if MutexLock(lockID, ttl, backend) != nil {
+		return false
+	}
+
+	return true
 }

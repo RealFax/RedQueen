@@ -22,7 +22,7 @@ const (
 type LogPayload struct {
 	Command   Command `json:"command" msgpack:"cmd"`
 	TTL       *uint32 `json:"ttl,omitempty" msgpack:"ttl,omitempty"`
-	Namespace string  `json:"namespace,omitempty" msgpack:"ns,omitempty"`
+	Namespace *string `json:"namespace,omitempty" msgpack:"ns,omitempty"`
 	Key       []byte  `json:"key,omitempty" msgpack:"k,omitempty"`
 	Value     []byte  `json:"value,omitempty" msgpack:"v,omitempty"`
 }

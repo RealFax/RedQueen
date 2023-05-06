@@ -1,5 +1,6 @@
 package store
 
 const (
-	DefaultNamespace = "RedQueen"
+	// DefaultNamespace = "RedQueen"
+	DefaultNamespace = ""
 )

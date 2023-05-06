@@ -13,19 +13,29 @@ type FSM struct {
 	Store   store.Store
 }
 
+func (f *FSM) currentNamespace(namespace *string) (store.Namespace, error) {
+	var (
+		err      error
+		storeAPI store.Namespace = f.Store
+	)
+
+	if namespace != nil {
+		if storeAPI, err = f.Store.Namespace(*namespace); err != nil {
+			return nil, errors.Wrap(err, "switch namespace fatal")
+		}
+	}
+
+	return storeAPI, nil
+}
+
 func (f *FSM) handleSetWithTTL(payload *LogPayload) error {
 	if payload.TTL == nil || payload.Key == nil || payload.Value == nil {
 		return errors.New("invalid SetWithTTL args")
 	}
 
-	var (
-		err  error
-		dest store.Base = f.Store
-	)
-	if payload.Namespace != f.Store.GetNamespace() {
-		if dest, err = f.Store.Namespace(payload.Namespace); err != nil {
-			return errors.Wrap(err, "switch namespace fatal")
-		}
+	dest, err := f.currentNamespace(payload.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return dest.SetWithTTL(payload.Key, payload.Value, *payload.TTL)
@@ -36,14 +46,9 @@ func (f *FSM) handleTrySetWithTTL(payload *LogPayload) error {
 		return errors.New("invalid TrySetWithTTL args")
 	}
 
-	var (
-		err  error
-		dest store.Base = f.Store
-	)
-	if payload.Namespace != f.Store.GetNamespace() {
-		if dest, err = f.Store.Namespace(payload.Namespace); err != nil {
-			return errors.Wrap(err, "switch namespace fatal")
-		}
+	dest, err := f.currentNamespace(payload.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return dest.TrySetWithTTL(payload.Key, payload.Value, *payload.TTL)
@@ -54,14 +59,9 @@ func (f *FSM) handleSet(payload *LogPayload) error {
 		return errors.New("invalid Set args")
 	}
 
-	var (
-		err  error
-		dest store.Base = f.Store
-	)
-	if payload.Namespace != f.Store.GetNamespace() {
-		if dest, err = f.Store.Namespace(payload.Namespace); err != nil {
-			return errors.Wrap(err, "switch namespace fatal")
-		}
+	dest, err := f.currentNamespace(payload.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return dest.Set(payload.Key, payload.Value)
@@ -72,14 +72,9 @@ func (f *FSM) handleTrySet(payload *LogPayload) error {
 		return errors.New("invalid TrySet args")
 	}
 
-	var (
-		err  error
-		dest store.Base = f.Store
-	)
-	if payload.Namespace != f.Store.GetNamespace() {
-		if dest, err = f.Store.Namespace(payload.Namespace); err != nil {
-			return errors.Wrap(err, "switch namespace fatal")
-		}
+	dest, err := f.currentNamespace(payload.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return dest.TrySet(payload.Key, payload.Value)
@@ -90,14 +85,9 @@ func (f *FSM) handleDel(payload *LogPayload) error {
 		return errors.New("invalid Del args")
 	}
 
-	var (
-		err  error
-		dest store.Base = f.Store
-	)
-	if payload.Namespace != f.Store.GetNamespace() {
-		if dest, err = f.Store.Namespace(payload.Namespace); err != nil {
-			return errors.Wrap(err, "switch namespace fatal")
-		}
+	dest, err := f.currentNamespace(payload.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return dest.Del(payload.Key)

@@ -280,7 +280,6 @@ var KV_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LockerClient interface {
-	New(ctx context.Context, in *NewMutexRequest, opts ...grpc.CallOption) (*NewMutexResponse, error)
 	Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error)
 	Unlock(ctx context.Context, in *UnlockRequest, opts ...grpc.CallOption) (*UnlockResponse, error)
 	TryLock(ctx context.Context, in *TryLockRequest, opts ...grpc.CallOption) (*TryLockResponse, error)
@@ -292,15 +291,6 @@ type lockerClient struct {
 
 func NewLockerClient(cc grpc.ClientConnInterface) LockerClient {
 	return &lockerClient{cc}
-}
-
-func (c *lockerClient) New(ctx context.Context, in *NewMutexRequest, opts ...grpc.CallOption) (*NewMutexResponse, error) {
-	out := new(NewMutexResponse)
-	err := c.cc.Invoke(ctx, "/serverpb.Locker/New", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *lockerClient) Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error) {
@@ -334,7 +324,6 @@ func (c *lockerClient) TryLock(ctx context.Context, in *TryLockRequest, opts ...
 // All implementations must embed UnimplementedLockerServer
 // for forward compatibility
 type LockerServer interface {
-	New(context.Context, *NewMutexRequest) (*NewMutexResponse, error)
 	Lock(context.Context, *LockRequest) (*LockResponse, error)
 	Unlock(context.Context, *UnlockRequest) (*UnlockResponse, error)
 	TryLock(context.Context, *TryLockRequest) (*TryLockResponse, error)
@@ -345,9 +334,6 @@ type LockerServer interface {
 type UnimplementedLockerServer struct {
 }
 
-func (UnimplementedLockerServer) New(context.Context, *NewMutexRequest) (*NewMutexResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method New not implemented")
-}
 func (UnimplementedLockerServer) Lock(context.Context, *LockRequest) (*LockResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Lock not implemented")
 }
@@ -368,24 +354,6 @@ type UnsafeLockerServer interface {
 
 func RegisterLockerServer(s grpc.ServiceRegistrar, srv LockerServer) {
 	s.RegisterService(&Locker_ServiceDesc, srv)
-}
-
-func _Locker_New_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewMutexRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LockerServer).New(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/serverpb.Locker/New",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LockerServer).New(ctx, req.(*NewMutexRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Locker_Lock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -449,10 +417,6 @@ var Locker_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "serverpb.Locker",
 	HandlerType: (*LockerServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "New",
-			Handler:    _Locker_New_Handler,
-		},
 		{
 			MethodName: "Lock",
 			Handler:    _Locker_Lock_Handler,
