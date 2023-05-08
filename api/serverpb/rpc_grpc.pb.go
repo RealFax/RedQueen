@@ -443,7 +443,8 @@ type ServiceBridgeClient interface {
 	Query(ctx context.Context, in *QueryServiceRequest, opts ...grpc.CallOption) (*QueryServiceResponse, error)
 	Connect(ctx context.Context, in *ConnectServiceRequest, opts ...grpc.CallOption) (*ConnectServiceResponse, error)
 	Pipeline(ctx context.Context, opts ...grpc.CallOption) (ServiceBridge_PipelineClient, error)
-	HealthCheck(ctx context.Context, opts ...grpc.CallOption) (ServiceBridge_HealthCheckClient, error)
+	HealthCheckSender(ctx context.Context, opts ...grpc.CallOption) (ServiceBridge_HealthCheckSenderClient, error)
+	HealthCheckReceiver(ctx context.Context, in *HealthCheckRServiceRequest, opts ...grpc.CallOption) (ServiceBridge_HealthCheckReceiverClient, error)
 }
 
 type serviceBridgeClient struct {
@@ -521,31 +522,66 @@ func (x *serviceBridgePipelineClient) Recv() (*PipelineServiceResponse, error) {
 	return m, nil
 }
 
-func (c *serviceBridgeClient) HealthCheck(ctx context.Context, opts ...grpc.CallOption) (ServiceBridge_HealthCheckClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ServiceBridge_ServiceDesc.Streams[1], "/serverpb.ServiceBridge/HealthCheck", opts...)
+func (c *serviceBridgeClient) HealthCheckSender(ctx context.Context, opts ...grpc.CallOption) (ServiceBridge_HealthCheckSenderClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ServiceBridge_ServiceDesc.Streams[1], "/serverpb.ServiceBridge/HealthCheckSender", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &serviceBridgeHealthCheckClient{stream}
+	x := &serviceBridgeHealthCheckSenderClient{stream}
 	return x, nil
 }
 
-type ServiceBridge_HealthCheckClient interface {
-	Send(*HealthCheckServiceRequest) error
-	Recv() (*HealthCheckServiceResponse, error)
+type ServiceBridge_HealthCheckSenderClient interface {
+	Send(*HealthCheckSServiceRequest) error
+	CloseAndRecv() (*HealthCheckSServiceResponse, error)
 	grpc.ClientStream
 }
 
-type serviceBridgeHealthCheckClient struct {
+type serviceBridgeHealthCheckSenderClient struct {
 	grpc.ClientStream
 }
 
-func (x *serviceBridgeHealthCheckClient) Send(m *HealthCheckServiceRequest) error {
+func (x *serviceBridgeHealthCheckSenderClient) Send(m *HealthCheckSServiceRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *serviceBridgeHealthCheckClient) Recv() (*HealthCheckServiceResponse, error) {
-	m := new(HealthCheckServiceResponse)
+func (x *serviceBridgeHealthCheckSenderClient) CloseAndRecv() (*HealthCheckSServiceResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(HealthCheckSServiceResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *serviceBridgeClient) HealthCheckReceiver(ctx context.Context, in *HealthCheckRServiceRequest, opts ...grpc.CallOption) (ServiceBridge_HealthCheckReceiverClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ServiceBridge_ServiceDesc.Streams[2], "/serverpb.ServiceBridge/HealthCheckReceiver", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &serviceBridgeHealthCheckReceiverClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ServiceBridge_HealthCheckReceiverClient interface {
+	Recv() (*HealthCheckRServiceResponse, error)
+	grpc.ClientStream
+}
+
+type serviceBridgeHealthCheckReceiverClient struct {
+	grpc.ClientStream
+}
+
+func (x *serviceBridgeHealthCheckReceiverClient) Recv() (*HealthCheckRServiceResponse, error) {
+	m := new(HealthCheckRServiceResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -561,7 +597,8 @@ type ServiceBridgeServer interface {
 	Query(context.Context, *QueryServiceRequest) (*QueryServiceResponse, error)
 	Connect(context.Context, *ConnectServiceRequest) (*ConnectServiceResponse, error)
 	Pipeline(ServiceBridge_PipelineServer) error
-	HealthCheck(ServiceBridge_HealthCheckServer) error
+	HealthCheckSender(ServiceBridge_HealthCheckSenderServer) error
+	HealthCheckReceiver(*HealthCheckRServiceRequest, ServiceBridge_HealthCheckReceiverServer) error
 	mustEmbedUnimplementedServiceBridgeServer()
 }
 
@@ -584,8 +621,11 @@ func (UnimplementedServiceBridgeServer) Connect(context.Context, *ConnectService
 func (UnimplementedServiceBridgeServer) Pipeline(ServiceBridge_PipelineServer) error {
 	return status.Errorf(codes.Unimplemented, "method Pipeline not implemented")
 }
-func (UnimplementedServiceBridgeServer) HealthCheck(ServiceBridge_HealthCheckServer) error {
-	return status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
+func (UnimplementedServiceBridgeServer) HealthCheckSender(ServiceBridge_HealthCheckSenderServer) error {
+	return status.Errorf(codes.Unimplemented, "method HealthCheckSender not implemented")
+}
+func (UnimplementedServiceBridgeServer) HealthCheckReceiver(*HealthCheckRServiceRequest, ServiceBridge_HealthCheckReceiverServer) error {
+	return status.Errorf(codes.Unimplemented, "method HealthCheckReceiver not implemented")
 }
 func (UnimplementedServiceBridgeServer) mustEmbedUnimplementedServiceBridgeServer() {}
 
@@ -698,30 +738,51 @@ func (x *serviceBridgePipelineServer) Recv() (*PipelineServiceRequest, error) {
 	return m, nil
 }
 
-func _ServiceBridge_HealthCheck_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ServiceBridgeServer).HealthCheck(&serviceBridgeHealthCheckServer{stream})
+func _ServiceBridge_HealthCheckSender_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ServiceBridgeServer).HealthCheckSender(&serviceBridgeHealthCheckSenderServer{stream})
 }
 
-type ServiceBridge_HealthCheckServer interface {
-	Send(*HealthCheckServiceResponse) error
-	Recv() (*HealthCheckServiceRequest, error)
+type ServiceBridge_HealthCheckSenderServer interface {
+	SendAndClose(*HealthCheckSServiceResponse) error
+	Recv() (*HealthCheckSServiceRequest, error)
 	grpc.ServerStream
 }
 
-type serviceBridgeHealthCheckServer struct {
+type serviceBridgeHealthCheckSenderServer struct {
 	grpc.ServerStream
 }
 
-func (x *serviceBridgeHealthCheckServer) Send(m *HealthCheckServiceResponse) error {
+func (x *serviceBridgeHealthCheckSenderServer) SendAndClose(m *HealthCheckSServiceResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *serviceBridgeHealthCheckServer) Recv() (*HealthCheckServiceRequest, error) {
-	m := new(HealthCheckServiceRequest)
+func (x *serviceBridgeHealthCheckSenderServer) Recv() (*HealthCheckSServiceRequest, error) {
+	m := new(HealthCheckSServiceRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _ServiceBridge_HealthCheckReceiver_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(HealthCheckRServiceRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ServiceBridgeServer).HealthCheckReceiver(m, &serviceBridgeHealthCheckReceiverServer{stream})
+}
+
+type ServiceBridge_HealthCheckReceiverServer interface {
+	Send(*HealthCheckRServiceResponse) error
+	grpc.ServerStream
+}
+
+type serviceBridgeHealthCheckReceiverServer struct {
+	grpc.ServerStream
+}
+
+func (x *serviceBridgeHealthCheckReceiverServer) Send(m *HealthCheckRServiceResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // ServiceBridge_ServiceDesc is the grpc.ServiceDesc for ServiceBridge service.
@@ -756,10 +817,14 @@ var ServiceBridge_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "HealthCheck",
-			Handler:       _ServiceBridge_HealthCheck_Handler,
-			ServerStreams: true,
+			StreamName:    "HealthCheckSender",
+			Handler:       _ServiceBridge_HealthCheckSender_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "HealthCheckReceiver",
+			Handler:       _ServiceBridge_HealthCheckReceiver_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "rpc.proto",

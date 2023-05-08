@@ -130,6 +130,12 @@ service Locker {
 
 // --------------- Service bridge --------------- //
 
+enum ServiceHealthStatus {
+  Green = 0; // Green: everything is working fine
+  Yellow = 1; // Yellow: There are some problems with the service that may affect usage
+  Red = 2; // Red: There are some problems with the service and cannot be used normally
+}
+
 // description:
 // the service bridge will create a bridge between a and b services for streaming data
 

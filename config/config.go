@@ -56,6 +56,11 @@ type Config struct {
 	Auth     `toml:"auth"`
 }
 
-func New() {
+func bindFromArgs(cfg *Config) error {
 
+	return nil
+}
+
+func newConfigEntity() *Config {
+	return new(Config)
 }
