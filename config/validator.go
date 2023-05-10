@@ -9,6 +9,21 @@ type Validator interface {
 	Valid() error
 }
 
+type EnumStoreBackend string
+
+const (
+	StoreBackendNuts EnumStoreBackend = "nuts"
+)
+
+func (b EnumStoreBackend) Valid() error {
+	switch b {
+	case StoreBackendNuts:
+		return nil
+	default:
+		return errors.New("unknown store backend type")
+	}
+}
+
 type EnumClusterState string
 
 const (
