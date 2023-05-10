@@ -28,7 +28,7 @@ type LogPayload struct {
 }
 
 type RaftConfig struct {
-	ServerID, Addr, BoldStorePath, FileSnapshotStorePath string
+	ServerID, Addr, BoltStorePath, FileSnapshotStorePath string
 	FSM                                                  *FSM
 	Clusters                                             []raft.Server
 }
@@ -45,7 +45,7 @@ func NewRaft(rcfg RaftConfig) (*Raft, error) {
 	cfg := raft.DefaultConfig()
 	cfg.LocalID = raft.ServerID(rcfg.ServerID)
 
-	store, err := raftboltdb.NewBoltStore(rcfg.BoldStorePath)
+	store, err := raftboltdb.NewBoltStore(rcfg.BoltStorePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "boltdb")
 	}

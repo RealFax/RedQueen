@@ -5,6 +5,15 @@ listen-peer-addr = "127.0.0.1:2539"
 listen-client-addr = "127.0.0.1:2540"
 max-snapshots = 5
 
+[store]
+# backend options
+# nuts
+backend = "nuts"
+    [store.nuts]
+    node-num = 1
+    sync = false
+    strict-mode = false
+    data-dir = "/tmp/red_queen/nuts"
 
 [cluster]
     [[cluster.bootstrap]]

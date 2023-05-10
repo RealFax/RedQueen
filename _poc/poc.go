@@ -126,7 +126,7 @@ func main() {
 	raftServer, err := RedQueen.NewRaft(RedQueen.RaftConfig{
 		ServerID:              *nodeID,
 		Addr:                  *raftAddr,
-		BoldStorePath:         "./red_queen/" + *nodeID + "/bolt",
+		BoltStorePath:         "./red_queen/" + *nodeID + "/bolt",
 		FileSnapshotStorePath: "./red_queen/" + *nodeID + "/",
 		FSM:                   RedQueen.NewFSM(db),
 		Clusters: func() []raft.Server {

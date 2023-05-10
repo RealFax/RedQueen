@@ -8,7 +8,7 @@ option go_package = "./;serverpb";
 // --------------- Public --------------- //
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
-  uint64 cluster_id = 1;
+  string cluster_id = 1;
 
   // reserve field
   uint64 revision = 2;
