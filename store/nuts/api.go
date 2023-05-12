@@ -89,7 +89,7 @@ func (s *storeAPI) Del(key []byte) error {
 }
 
 func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
-	if strictMode {
+	if strictMode.Load() {
 		// check watch key does it exist
 		if err := s.db.View(func(tx *nutsdb.Tx) error {
 			_, err := tx.Get(s.namespace, key)
