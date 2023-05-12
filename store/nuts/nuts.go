@@ -5,12 +5,17 @@ import (
 	"github.com/nutsdb/nutsdb"
 	"github.com/pkg/errors"
 	"sync"
+	"sync/atomic"
 )
 
-var strictMode = true
+var strictMode atomic.Bool
 
-func EnableStrictMode()  { strictMode = true }
-func DisableStrictMode() { strictMode = false }
+func EnableStrictMode()  { strictMode.Store(true) }
+func DisableStrictMode() { strictMode.Store(false) }
+
+func init() {
+	EnableStrictMode()
+}
 
 type Config struct {
 	NodeNum int64
@@ -39,7 +44,7 @@ func New(cfg Config) (store.Store, error) {
 		nutsdb.WithNodeNum(cfg.NodeNum),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't create store session")
+		return nil, errors.Wrap(err, "can't create nuts store api")
 	}
 
 	rootWatcher := &Watcher{}
