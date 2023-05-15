@@ -4,6 +4,22 @@ package serverpb;
 
 option go_package = "./;serverpb";
 
+enum RaftLogCommand {
+  SetWithTTL = 0;
+  TrySetWithTTL = 1;
+  Set = 2;
+  TrySet = 3;
+  Del = 4;
+}
+
+message RaftLogPayload {
+  RaftLogCommand command = 1;
+  bytes key = 2;
+  optional bytes value = 3;
+  optional uint32 ttl = 4;
+  optional string namespace = 5;
+}
+
 message AppendClusterRequest {
   string server_id = 1;
   string peer_addr = 2;
@@ -12,6 +28,6 @@ message AppendClusterRequest {
 
 message AppendClusterResponse {}
 
-service Server {
+service RedQueen {
   rpc AppendCluster(AppendClusterRequest) returns (AppendClusterResponse) {}
 }
