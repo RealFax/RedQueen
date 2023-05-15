@@ -18,86 +18,86 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// ServerClient is the client API for Server service.
+// RedQueenClient is the client API for RedQueen service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ServerClient interface {
+type RedQueenClient interface {
 	AppendCluster(ctx context.Context, in *AppendClusterRequest, opts ...grpc.CallOption) (*AppendClusterResponse, error)
 }
 
-type serverClient struct {
+type redQueenClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewServerClient(cc grpc.ClientConnInterface) ServerClient {
-	return &serverClient{cc}
+func NewRedQueenClient(cc grpc.ClientConnInterface) RedQueenClient {
+	return &redQueenClient{cc}
 }
 
-func (c *serverClient) AppendCluster(ctx context.Context, in *AppendClusterRequest, opts ...grpc.CallOption) (*AppendClusterResponse, error) {
+func (c *redQueenClient) AppendCluster(ctx context.Context, in *AppendClusterRequest, opts ...grpc.CallOption) (*AppendClusterResponse, error) {
 	out := new(AppendClusterResponse)
-	err := c.cc.Invoke(ctx, "/serverpb.Server/AppendCluster", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/serverpb.RedQueen/AppendCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ServerServer is the server API for Server service.
-// All implementations must embed UnimplementedServerServer
+// RedQueenServer is the server API for RedQueen service.
+// All implementations must embed UnimplementedRedQueenServer
 // for forward compatibility
-type ServerServer interface {
+type RedQueenServer interface {
 	AppendCluster(context.Context, *AppendClusterRequest) (*AppendClusterResponse, error)
-	mustEmbedUnimplementedServerServer()
+	mustEmbedUnimplementedRedQueenServer()
 }
 
-// UnimplementedServerServer must be embedded to have forward compatible implementations.
-type UnimplementedServerServer struct {
+// UnimplementedRedQueenServer must be embedded to have forward compatible implementations.
+type UnimplementedRedQueenServer struct {
 }
 
-func (UnimplementedServerServer) AppendCluster(context.Context, *AppendClusterRequest) (*AppendClusterResponse, error) {
+func (UnimplementedRedQueenServer) AppendCluster(context.Context, *AppendClusterRequest) (*AppendClusterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppendCluster not implemented")
 }
-func (UnimplementedServerServer) mustEmbedUnimplementedServerServer() {}
+func (UnimplementedRedQueenServer) mustEmbedUnimplementedRedQueenServer() {}
 
-// UnsafeServerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ServerServer will
+// UnsafeRedQueenServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RedQueenServer will
 // result in compilation errors.
-type UnsafeServerServer interface {
-	mustEmbedUnimplementedServerServer()
+type UnsafeRedQueenServer interface {
+	mustEmbedUnimplementedRedQueenServer()
 }
 
-func RegisterServerServer(s grpc.ServiceRegistrar, srv ServerServer) {
-	s.RegisterService(&Server_ServiceDesc, srv)
+func RegisterRedQueenServer(s grpc.ServiceRegistrar, srv RedQueenServer) {
+	s.RegisterService(&RedQueen_ServiceDesc, srv)
 }
 
-func _Server_AppendCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RedQueen_AppendCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AppendClusterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServerServer).AppendCluster(ctx, in)
+		return srv.(RedQueenServer).AppendCluster(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serverpb.Server/AppendCluster",
+		FullMethod: "/serverpb.RedQueen/AppendCluster",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServerServer).AppendCluster(ctx, req.(*AppendClusterRequest))
+		return srv.(RedQueenServer).AppendCluster(ctx, req.(*AppendClusterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Server_ServiceDesc is the grpc.ServiceDesc for Server service.
+// RedQueen_ServiceDesc is the grpc.ServiceDesc for RedQueen service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Server_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "serverpb.Server",
-	HandlerType: (*ServerServer)(nil),
+var RedQueen_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "serverpb.RedQueen",
+	HandlerType: (*RedQueenServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "AppendCluster",
-			Handler:    _Server_AppendCluster_Handler,
+			Handler:    _RedQueen_AppendCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

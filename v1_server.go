@@ -2,6 +2,7 @@ package RedQueen
 
 import (
 	"context"
+	"github.com/hashicorp/raft"
 	"sync/atomic"
 	"time"
 
@@ -25,6 +26,10 @@ type Locker interface {
 	Lock(context.Context, *serverpb.LockRequest) (*serverpb.LockResponse, error)
 	Unlock(context.Context, *serverpb.UnlockRequest) (*serverpb.UnlockResponse, error)
 	TryLock(context.Context, *serverpb.TryLockRequest) (*serverpb.TryLockResponse, error)
+}
+
+type RedQueen interface {
+	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 }
 
 func (s *Server) responseHeader() *serverpb.ResponseHeader {
@@ -143,4 +148,11 @@ func (s *Server) TryLock(_ context.Context, req *serverpb.TryLockRequest) (*serv
 		return nil, status.Error(codes.PermissionDenied, locker.ErrStatusBusy.Error())
 	}
 	return &serverpb.TryLockResponse{Header: s.responseHeader()}, nil
+}
+
+func (s *Server) AppendCluster(_ context.Context, req *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error) {
+	if err := s.raft.AppendCluster(raft.ServerID(req.ServerId), raft.ServerAddress(req.PeerAddr)); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+	return &serverpb.AppendClusterResponse{}, nil
 }

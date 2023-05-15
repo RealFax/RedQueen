@@ -98,6 +98,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	// init server raft
 	if server.raft, err = NewRaft(RaftConfig{
 		ServerID:              cfg.Node.ID,
 		Addr:                  cfg.Node.ListenPeerAddr,
