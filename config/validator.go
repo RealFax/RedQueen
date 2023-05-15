@@ -66,6 +66,10 @@ func (p FilePath) Valid() error {
 	return errors.New("file/dir not found")
 }
 
+type stringValidator interface {
+	EnumStoreBackend | EnumClusterState | EnumLogLogger | FilePath
+}
+
 func Validate() {
 
 }
