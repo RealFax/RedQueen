@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package serverpb;
+
+option go_package = "./;serverpb";
+
+message AppendClusterRequest {
+  string server_id = 1;
+  string peer_addr = 2;
+  bool voter = 3;
+}
+
+message AppendClusterResponse {}
+
+service Server {
+  rpc AppendCluster(AppendClusterRequest) returns (AppendClusterResponse) {}
+}
