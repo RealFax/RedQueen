@@ -3,7 +3,9 @@ package config
 import (
 	"flag"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+	"os"
 )
 
 type ServerEnv interface {
@@ -124,7 +126,7 @@ func bindFromArgs(cfg *Config, args ...string) error {
 	fs.Var(newUInt32Value(0, &cfg.Node.MaxSnapshots), "max-snapshots", "")
 
 	// main config::store
-	fs.Var(newEnumStoreBackendValue("", &cfg.Store.Backend), "store-backend", "")
+	fs.Var(newValidatorStringValue[EnumStoreBackend]("", &cfg.Store.Backend), "store-backend", "")
 
 	// main config::store::nuts
 	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", 1, "")
@@ -133,6 +135,8 @@ func bindFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Store.Nuts.DataDir, "nuts-data-dir", "", "")
 
 	// main config::cluster
+	fs.Var(newValidatorStringValue[EnumClusterState]("", &cfg.Cluster.State), "cluster-state", "")
+	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
 
@@ -147,11 +151,51 @@ func bindFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Security.PeerTLSKey, "peer-tls-key", "", "")
 
 	// main config::log
+	fs.Var(newValidatorStringValue[EnumLogLogger]("", &cfg.Log.Logger), "logger", "")
+	fs.StringVar(&cfg.Log.OutputDir, "log-dir", "", "")
+	fs.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
 
 	// main config::misc
 	fs.BoolVar(&cfg.Misc.PPROF, "d-pprof", false, "")
 
 	// main config::auth
 	fs.StringVar(&cfg.Auth.Token, "auth-token", "", "")
+
 	return nil
+}
+
+func bindFromConfigFile(cfg *Config, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = toml.NewDecoder(f).Decode(cfg)
+	return err
+}
+
+func ReadFromArgs(args ...string) (*Config, error) {
+	cfg := newConfigEntity()
+	if err := bindFromArgs(cfg, args...); err != nil {
+		return nil, err
+	}
+
+	// override config from args
+	if cfg.Env().ConfigFile() != "" {
+		if err := bindFromConfigFile(cfg, cfg.env.ConfigFile()); err != nil {
+			return nil, err
+		}
+		return cfg, nil
+	}
+
+	return cfg, nil
+}
+
+func ReadFromPath(path string) (*Config, error) {
+	cfg := newConfigEntity()
+	if err := bindFromConfigFile(cfg, path); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
