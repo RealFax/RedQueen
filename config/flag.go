@@ -75,7 +75,7 @@ func (v validatorStringValue[T]) Set(s string) error {
 
 func (v validatorStringValue[T]) String() string {
 	if v.ptr == nil {
-		return "<none>"
+		return ""
 	}
 	return string(*v.ptr)
 }
