@@ -85,7 +85,7 @@ func newStoreBackend(cfg config.Store) (store.Store, error) {
 	return handle(cfg)
 }
 
-func NewServer(cfg config.Config) (*Server, error) {
+func NewServer(cfg *config.Config) (*Server, error) {
 
 	var (
 		server = Server{
