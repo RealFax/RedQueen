@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
@@ -104,12 +105,12 @@ func newConfigEntity() *Config {
 	return new(Config)
 }
 
-func bindFromArgs(cfg *Config, args ...string) error {
+func bindServerFromArgs(cfg *Config, args ...string) error {
 	if len(args) < 1 {
 		return errors.New("invalid program args")
 	}
 
-	fs := flag.NewFlagSet(args[0], flag.ExitOnError)
+	fs := flag.NewFlagSet("server", flag.ExitOnError)
 
 	fs.Usage = func() {
 		fmt.Fprintln(fs.Output(), "Usage of RedQueen:")
@@ -120,25 +121,27 @@ func bindFromArgs(cfg *Config, args ...string) error {
 
 	// main config::node
 	fs.StringVar(&cfg.Node.ID, "node-id", "", "unique node id")
-	fs.StringVar(&cfg.Node.DataDir, "data-dir", "./data", "path to the data dir")
-	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", "", "")
-	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", "", "")
-	fs.Var(newUInt32Value(0, &cfg.Node.MaxSnapshots), "max-snapshots", "")
+	fs.StringVar(&cfg.Node.DataDir, "data-dir", DefaultNodeDataDir, "path to the data dir")
+	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "")
+	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "")
+	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "")
 
 	// main config::store
-	fs.Var(newValidatorStringValue[EnumStoreBackend]("", &cfg.Store.Backend), "store-backend", "")
+	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
 	// main config::store::nuts
-	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", 1, "")
-	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", false, "")
-	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", false, "")
-	fs.StringVar(&cfg.Store.Nuts.DataDir, "nuts-data-dir", "", "")
+	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "")
+	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "")
+	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "")
+	fs.StringVar(&cfg.Store.Nuts.DataDir, "nuts-data-dir", DefaultStoreNutsDataDir, "")
 
 	// main config::cluster
-	fs.Var(newValidatorStringValue[EnumClusterState]("", &cfg.Cluster.State), "cluster-state", "")
+	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "")
 	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
+	// in cli: node-1@peer_addr,node-2@peer_addr
+	fs.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "")
 
 	// main config::security
 	fs.BoolVar(&cfg.Security.EnableTLS, "enable-tls", false, "")
@@ -151,8 +154,8 @@ func bindFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Security.PeerTLSKey, "peer-tls-key", "", "")
 
 	// main config::log
-	fs.Var(newValidatorStringValue[EnumLogLogger]("", &cfg.Log.Logger), "logger", "")
-	fs.StringVar(&cfg.Log.OutputDir, "log-dir", "", "")
+	fs.Var(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "logger", "")
+	fs.StringVar(&cfg.Log.OutputDir, "log-dir", DefaultLogOutputDir, "")
 	fs.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
 
 	// main config::misc
@@ -161,7 +164,7 @@ func bindFromArgs(cfg *Config, args ...string) error {
 	// main config::auth
 	fs.StringVar(&cfg.Auth.Token, "auth-token", "", "")
 
-	return nil
+	return fs.Parse(args)
 }
 
 func bindFromConfigFile(cfg *Config, path string) error {
@@ -177,8 +180,19 @@ func bindFromConfigFile(cfg *Config, path string) error {
 
 func ReadFromArgs(args ...string) (*Config, error) {
 	cfg := newConfigEntity()
-	if err := bindFromArgs(cfg, args...); err != nil {
-		return nil, err
+
+	args = args[1:]
+	if len(args) == 0 {
+		return nil, errors.New("no subcommand provided")
+	}
+
+	switch args[0] {
+	case "server":
+		if err := bindServerFromArgs(cfg, args[1:]...); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unknown subcommand")
 	}
 
 	// override config from args

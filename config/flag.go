@@ -1,6 +1,17 @@
 package config
 
-import "strconv"
+import (
+	"github.com/pkg/errors"
+	"net/netip"
+	"strconv"
+	"strings"
+)
+
+const usage = `
+Usage of RedQueen:
+
+	example: ./RedQueen -config-file ./config.toml
+`
 
 // -- uint32 value --
 
@@ -42,7 +53,9 @@ func (e *enumStoreBackendValue) Set(s string) error {
 
 func (e *enumStoreBackendValue) String() string { return string(*e) }
 
-type validatorStringValue[T stringValidator] struct{ val *T }
+// -- stringValidator value --
+
+type validatorStringValue[T stringValidator] struct{ ptr *T }
 
 func newValidatorStringValue[T stringValidator](val string, p *T) *validatorStringValue[T] {
 	*p = T(val)
@@ -56,8 +69,78 @@ func (v validatorStringValue[T]) Set(s string) error {
 			return err
 		}
 	}
-	*v.val = val.(T)
+	*v.ptr = val.(T)
 	return nil
 }
 
-func (v validatorStringValue[T]) String() string { return string(*v.val) }
+func (v validatorStringValue[T]) String() string {
+	if v.ptr == nil {
+		return "<none>"
+	}
+	return string(*v.ptr)
+}
+
+// -- []ClusterBootstrap value --
+
+func DecodeClusterBootstraps(s string) ([]ClusterBootstrap, error) {
+	if s == "" {
+		return []ClusterBootstrap{}, nil
+	}
+
+	cs := strings.Split(s, ",")
+	if len(cs) == 0 {
+		return nil, errors.New("cluster not found")
+	}
+
+	cbs := make([]ClusterBootstrap, len(cs))
+	for i, c := range cs {
+		res := strings.Split(c, "@")
+		if len(res) != 2 {
+			return nil, errors.Errorf("invalid cluster info: %s", c)
+		}
+
+		if _, err := netip.ParseAddrPort(res[1]); err != nil {
+			return nil, errors.Wrap(err, "invalid peer addr format")
+		}
+
+		cbs[i] = ClusterBootstrap{
+			Name:     res[0],
+			PeerAddr: res[1],
+		}
+
+	}
+
+	return cbs, nil
+}
+
+func EncodeClusterBootstraps(s []ClusterBootstrap) string {
+	if len(s) == 0 {
+		return ""
+	}
+	builder := strings.Builder{}
+	for _, cluster := range s {
+		builder.WriteString(cluster.Name)
+		builder.WriteRune('@')
+		builder.WriteString(cluster.PeerAddr)
+		builder.WriteRune(',')
+	}
+	return builder.String()[:builder.Len()-1]
+}
+
+type clusterBootstrapsValue []ClusterBootstrap
+
+func newClusterBootstrapsValue(val string, p *[]ClusterBootstrap) *clusterBootstrapsValue {
+	*p, _ = DecodeClusterBootstraps(val)
+	return (*clusterBootstrapsValue)(p)
+}
+
+func (v *clusterBootstrapsValue) Set(s string) error {
+	clusters, err := DecodeClusterBootstraps(s)
+	if err != nil {
+		return err
+	}
+	*v = clusters
+	return nil
+}
+
+func (v *clusterBootstrapsValue) String() string { return EncodeClusterBootstraps(*v) }
