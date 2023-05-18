@@ -97,7 +97,11 @@ type Config struct {
 	Auth     `toml:"auth"`
 }
 
-func (c Config) Env() ServerEnv {
+func (c *Config) setupEnv() {
+	c.env.firstRun = c.Cluster.State == ClusterStateNew
+}
+
+func (c *Config) Env() ServerEnv {
 	return c.env
 }
 
@@ -186,6 +190,8 @@ func ReadFromArgs(args ...string) (*Config, error) {
 		return nil, errors.New("no subcommand provided")
 	}
 
+	defer cfg.setupEnv()
+
 	switch args[0] {
 	case "server":
 		if err := bindServerFromArgs(cfg, args[1:]...); err != nil {
@@ -209,6 +215,9 @@ func ReadFromArgs(args ...string) (*Config, error) {
 
 func ReadFromPath(path string) (*Config, error) {
 	cfg := newConfigEntity()
+
+	defer cfg.setupEnv()
+
 	if err := bindFromConfigFile(cfg, path); err != nil {
 		return nil, err
 	}

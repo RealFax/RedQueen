@@ -123,7 +123,7 @@ func main() {
 	}
 	defer db.Close()
 
-	raftServer, err := RedQueen.NewRaft(RedQueen.RaftConfig{
+	raftServer, err := RedQueen.NewRaft(true, RedQueen.RaftConfig{
 		ServerID:              *nodeID,
 		Addr:                  *raftAddr,
 		BoltStorePath:         "./red_queen/" + *nodeID + "/bolt",
