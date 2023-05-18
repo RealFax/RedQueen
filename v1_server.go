@@ -151,7 +151,7 @@ func (s *Server) TryLock(_ context.Context, req *serverpb.TryLockRequest) (*serv
 }
 
 func (s *Server) AppendCluster(_ context.Context, req *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error) {
-	if err := s.raft.AppendCluster(raft.ServerID(req.ServerId), raft.ServerAddress(req.PeerAddr)); err != nil {
+	if err := s.raft.AddCluster(raft.ServerID(req.ServerId), raft.ServerAddress(req.PeerAddr)); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	return &serverpb.AppendClusterResponse{}, nil
