@@ -192,6 +192,7 @@ func ReadFromArgs(args ...string) (*Config, error) {
 			return nil, err
 		}
 	default:
+		fmt.Print(usage)
 		return nil, errors.New("unknown subcommand")
 	}
 

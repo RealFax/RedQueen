@@ -7,11 +7,20 @@ import (
 	"strings"
 )
 
-const usage = `
+const (
+	usage = `
 Usage of RedQueen:
-
-	example: ./RedQueen -config-file ./config.toml
+	
+	method: server
+	example: 
+		./RedQueen [method] <options>
 `
+	serverUsage = `
+Usage of RedQueen(server):
+
+	example: ./RedQueen server -config-file ./config.toml
+`
+)
 
 // -- uint32 value --
 
