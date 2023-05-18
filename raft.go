@@ -37,11 +37,11 @@ type Raft struct {
 	*raft.Raft
 }
 
-func (r *Raft) AppendCluster(id raft.ServerID, addr raft.ServerAddress) error {
+func (r *Raft) AddCluster(id raft.ServerID, addr raft.ServerAddress) error {
 	return r.AddVoter(id, addr, 0, 0).Error()
 }
 
-func NewRaft(rcfg RaftConfig) (*Raft, error) {
+func NewRaft(bootstrap bool, rcfg RaftConfig) (*Raft, error) {
 	cfg := raft.DefaultConfig()
 	cfg.LocalID = raft.ServerID(rcfg.ServerID)
 
@@ -70,7 +70,13 @@ func NewRaft(rcfg RaftConfig) (*Raft, error) {
 		return nil, errors.Wrap(err, "raft")
 	}
 
-	return &Raft{r}, r.BootstrapCluster(raft.Configuration{
-		Servers: rcfg.Clusters,
-	}).Error()
+	if bootstrap {
+		if err = r.BootstrapCluster(raft.Configuration{
+			Servers: rcfg.Clusters,
+		}).Error(); err != nil {
+			return nil, err
+		}
+	}
+
+	return &Raft{r}, nil
 }

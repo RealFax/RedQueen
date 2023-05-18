@@ -2,12 +2,15 @@ package RedQueen
 
 import (
 	"context"
+	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/config"
 	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack/v5"
+	"google.golang.org/grpc"
+	"net"
 	"time"
 )
 
@@ -18,8 +21,13 @@ type Server struct {
 	store         store.Store
 	lockerBackend locker.Backend
 
-	cfg  *config.Config
-	raft *Raft
+	cfg        *config.Config
+	raft       *Raft
+	grpcServer *grpc.Server
+
+	serverpb.UnimplementedKVServer
+	serverpb.UnimplementedLockerServer
+	serverpb.UnimplementedRedQueenServer
 }
 
 func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {
@@ -62,14 +70,18 @@ func (s *Server) raftApply(ctx context.Context, timeout time.Duration, lp *LogPa
 }
 
 func (s *Server) ListenClient() error {
-
-	return nil
+	listener, err := net.Listen("tcp", s.cfg.Node.ListenClientAddr)
+	if err != nil {
+		return err
+	}
+	return s.grpcServer.Serve(listener)
 }
 
 func (s *Server) Close() (err error) {
 	if err = s.raft.Shutdown().Error(); err != nil {
 		return
 	}
+	s.grpcServer.Stop()
 	return
 }
 
@@ -83,12 +95,19 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		err error
 	)
 
+	// init server store backend
 	if server.store, err = newStoreBackend(cfg.Store); err != nil {
 		return nil, err
 	}
 
+	// init server grpc
+	server.grpcServer = grpc.NewServer()
+	serverpb.RegisterKVServer(server.grpcServer, &server)
+	serverpb.RegisterLockerServer(server.grpcServer, &server)
+	serverpb.RegisterRedQueenServer(server.grpcServer, &server)
+
 	// init server raft
-	if server.raft, err = NewRaft(RaftConfig{
+	if server.raft, err = NewRaft(cfg.Env().FirstRun(), RaftConfig{
 		ServerID:              cfg.Node.ID,
 		Addr:                  cfg.Node.ListenPeerAddr,
 		BoltStorePath:         cfg.Node.DataDir + "/bolt",
@@ -114,6 +133,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	// init distributed lock backend
 	server.lockerBackend = NewLockerBackend(server.store, server.raftApply)
 
 	return &server, nil
