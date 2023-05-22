@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack/v5"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"net"
 	"time"
 )
@@ -66,6 +67,27 @@ func (s *Server) raftApply(ctx context.Context, timeout time.Duration, lp *LogPa
 	case x := <-ch:
 		err = x.Error()
 		return x, err
+	}
+}
+
+func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) (raft.ApplyFuture, error) {
+	cmd, err := proto.Marshal(p)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal raft log error")
+	}
+
+	ch := make(chan raft.ApplyFuture, 1)
+
+	go func() {
+		ch <- s.raft.Apply(cmd, timeout)
+		close(ch)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, errors.Wrap(ctx.Err(), "context done")
+	case v := <-ch:
+		return v, v.Error()
 	}
 }
 
