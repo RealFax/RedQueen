@@ -8,6 +8,17 @@ import (
 	"sync/atomic"
 )
 
+// db state
+
+const (
+	StateOk uint32 = iota
+	StateBreak
+)
+
+var (
+	ErrStateBreak = errors.New("state break")
+)
+
 var strictMode atomic.Bool
 
 func EnableStrictMode()  { strictMode.Store(true) }
@@ -24,6 +35,8 @@ type Config struct {
 }
 
 type storeAPI struct {
+	state *uint32 // atomic
+
 	db *nutsdb.DB
 
 	// root watcher
@@ -50,6 +63,7 @@ func New(cfg Config) (store.Store, error) {
 	rootWatcher := &Watcher{}
 
 	return &storeAPI{
+		state:        new(uint32),
 		db:           db,
 		watcher:      rootWatcher,
 		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),

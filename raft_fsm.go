@@ -10,17 +10,17 @@ import (
 
 type FSM struct {
 	handler map[Command]func(payload *LogPayload) error
-	Store   store.Store
+	store   store.Store
 }
 
 func (f *FSM) currentNamespace(namespace *string) (store.Namespace, error) {
 	var (
 		err      error
-		storeAPI store.Namespace = f.Store
+		storeAPI store.Namespace = f.store
 	)
 
 	if namespace != nil {
-		if storeAPI, err = f.Store.Namespace(*namespace); err != nil {
+		if storeAPI, err = f.store.Namespace(*namespace); err != nil {
 			return nil, errors.Wrap(err, "switch namespace fatal")
 		}
 	}
@@ -111,7 +111,7 @@ func (f *FSM) Apply(log *raft.Log) any {
 }
 
 func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
-	snapshot, err := f.Store.Snapshot()
+	snapshot, err := f.store.Snapshot()
 	if err != nil {
 		return nil, errors.Wrap(err, "create snapshot failed")
 	}
@@ -119,19 +119,12 @@ func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
 }
 
 func (f *FSM) Restore(rc io.ReadCloser) error {
-	//dec := json.NewDecoder(rc)
-	//if dec.More() {
-	//	var payload LogPayload
-	//	if err := dec.Decode(&payload); err != nil {
-	//		return errors.Wrap(err, "could not decode payload")
-	//	}
-	//	f.Store.Set(payload.Key, payload.Value)
-	//}
+
 	return rc.Close()
 }
 
 func NewFSM(s store.Store) *FSM {
-	fsm := &FSM{Store: s}
+	fsm := &FSM{store: s}
 
 	// register fsm handlers
 	fsm.handler = map[Command]func(payload *LogPayload) error{
