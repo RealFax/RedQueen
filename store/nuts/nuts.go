@@ -30,6 +30,7 @@ func init() {
 
 type Config struct {
 	NodeNum int64
+	// SegmentSize int64
 	Sync    bool
 	DataDir string
 }
@@ -55,6 +56,7 @@ func New(cfg Config) (store.Store, error) {
 		nutsdb.WithDir(cfg.DataDir),
 		nutsdb.WithSyncEnable(cfg.Sync),
 		nutsdb.WithNodeNum(cfg.NodeNum),
+		// nutsdb.WithSegmentSize(cfg.SegmentSize),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create nuts store api")

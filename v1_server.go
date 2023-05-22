@@ -30,6 +30,7 @@ type Locker interface {
 
 type RedQueen interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
+	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
 }
 
 func (s *Server) responseHeader() *serverpb.ResponseHeader {
@@ -54,7 +55,7 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 		Key:       req.Key,
 		Value: func() []byte {
 			if req.IgnoreValue {
-				return []byte{}
+				return nil
 			}
 			return req.Value
 		}(),
@@ -84,11 +85,39 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	return nil, nil
+	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
+		Command: func() Command {
+			if req.IgnoreTtl {
+				return TrySet
+			}
+			return TrySetWithTTL
+		}(),
+		TTL: func() *uint32 {
+			return &req.Ttl
+		}(),
+		Namespace: req.Namespace,
+		Key:       req.Key,
+		Value: func() []byte {
+			if req.IgnoreValue {
+				return nil
+			}
+			return req.Value
+		}(),
+	}); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &serverpb.SetResponse{Header: s.responseHeader()}, nil
 }
 
 func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error) {
-	return nil, nil
+	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
+		Command:   Del,
+		Namespace: req.Namespace,
+		Key:       req.Key,
+	}); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &serverpb.DeleteResponse{Header: s.responseHeader()}, nil
 }
 
 func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServer) error {
@@ -155,4 +184,9 @@ func (s *Server) AppendCluster(_ context.Context, req *serverpb.AppendClusterReq
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	return &serverpb.AppendClusterResponse{}, nil
+}
+
+func (s *Server) LeaderMonitor(req *serverpb.LeaderMonitorRequest, stream serverpb.RedQueen_LeaderMonitorServer) error {
+
+	return nil
 }
