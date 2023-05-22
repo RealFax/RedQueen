@@ -34,3 +34,10 @@ func BenchmarkStoreAPI_Set(b *testing.B) {
 		db.Set(k, v)
 	}
 }
+
+func BenchmarkStoreAPI_SetWithTTL(b *testing.B) {
+	k, v := []byte("Hello"), []byte("World")
+	for i := 0; i < b.N; i++ {
+		db.SetWithTTL(k, v, 1)
+	}
+}

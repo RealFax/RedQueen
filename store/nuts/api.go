@@ -64,18 +64,14 @@ func (s *storeAPI) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) erro
 }
 
 func (s *storeAPI) Get(key []byte) (*store.Value, error) {
-	db, err := s.DB()
-	if err != nil {
-		return nil, err
-	}
 	val := store.NewValue(nil)
-	return val, db.View(func(tx *nutsdb.Tx) error {
-		entry, gErr := tx.Get(s.namespace, key)
-		if gErr != nil {
-			if gErr == nutsdb.ErrKeyNotFound {
+	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
+		entry, err := tx.Get(s.namespace, key)
+		if err != nil {
+			if err == nutsdb.ErrKeyNotFound {
 				return store.ErrKeyNotFound
 			}
-			return gErr
+			return err
 		}
 		val.Data = entry.Value
 		return nil
@@ -87,6 +83,7 @@ func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
 		if err := tx.Put(s.namespace, key, value, ttl); err != nil {
 			return err
 		}
+		// notify watcher key-value update
 		s.watcherChild.Update(key, value)
 		return nil
 	})
@@ -97,12 +94,8 @@ func (s *storeAPI) Set(key, value []byte) error {
 }
 
 func (s *storeAPI) TrySetWithTTL(key, value []byte, ttl uint32) error {
-	db, err := s.DB()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *nutsdb.Tx) error {
-		_, err = tx.Get(s.namespace, key)
+	return s.Transaction(true, func(tx *nutsdb.Tx) error {
+		_, err := tx.Get(s.namespace, key)
 		if err == nil {
 			return store.ErrKeyAlreadyExists
 		}
@@ -122,12 +115,8 @@ func (s *storeAPI) TrySet(key, value []byte) error {
 }
 
 func (s *storeAPI) Del(key []byte) error {
-	db, err := s.DB()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *nutsdb.Tx) error {
-		if err = tx.Delete(s.namespace, key); err != nil {
+	return s.Transaction(true, func(tx *nutsdb.Tx) error {
+		if err := tx.Delete(s.namespace, key); err != nil {
 			return err
 		}
 		s.watcherChild.Update(key, nil)
@@ -137,13 +126,9 @@ func (s *storeAPI) Del(key []byte) error {
 
 func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
 	if strictMode.Load() {
-		db, err := s.DB()
-		if err != nil {
-			return nil, err
-		}
 		// check watch key does it exist
-		if err = db.View(func(tx *nutsdb.Tx) error {
-			_, err = tx.Get(s.namespace, key)
+		if err := s.Transaction(false, func(tx *nutsdb.Tx) error {
+			_, err := tx.Get(s.namespace, key)
 			return err
 		}); err != nil {
 			return nil, errors.Wrap(err, "strict")
