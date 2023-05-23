@@ -17,13 +17,13 @@ func main() {
 		return
 	}
 
-	server, err := RedQueen.NewServer(cfg)
+	server, err := red.NewServer(cfg)
 	if err != nil {
 		fmt.Println("[-] init server failed, ", err)
 		return
 	}
 
-	if err = server.ListenClient(); err != nil {
+	if err = server.ListenServer(); err != nil {
 		fmt.Println("[-] listen client failed, ", err)
 		return
 	}
