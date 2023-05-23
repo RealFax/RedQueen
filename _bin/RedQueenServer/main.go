@@ -23,7 +23,7 @@ func main() {
 		return
 	}
 
-	if err = server.ListenClient(); err != nil {
+	if err = server.ListenServer(); err != nil {
 		fmt.Println("[-] listen client failed, ", err)
 		return
 	}

@@ -2,6 +2,7 @@ package RedQueen
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/hashicorp/raft"
 	"sync/atomic"
 	"time"
@@ -186,7 +187,24 @@ func (s *Server) AppendCluster(_ context.Context, req *serverpb.AppendClusterReq
 	return &serverpb.AppendClusterResponse{}, nil
 }
 
-func (s *Server) LeaderMonitor(req *serverpb.LeaderMonitorRequest, stream serverpb.RedQueen_LeaderMonitorServer) error {
+func (s *Server) LeaderMonitor(_ *serverpb.LeaderMonitorRequest, stream serverpb.RedQueen_LeaderMonitorServer) error {
+	var (
+		notifyID = uuid.New().String()
+		notify   = make(chan bool, 1)
+	)
+	s.stateNotify.Store(notifyID, notify)
 
-	return nil
+	defer func() {
+		s.stateNotify.Delete(notifyID)
+		close(notify)
+	}()
+
+	for {
+		if err := stream.Send(&serverpb.LeaderMonitorResponse{
+			Leader: <-notify,
+		}); err != nil {
+			return err
+		}
+	}
+
 }
