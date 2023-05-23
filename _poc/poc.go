@@ -80,9 +80,14 @@ func (s *httpServer) get(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (s *httpServer) state(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(s.raft.Stats())
+}
+
 func (s *httpServer) Start(addr string) error {
 	http.HandleFunc("/commit", s.commit)
 	http.HandleFunc("/get", s.get)
+	http.HandleFunc("/state", s.state)
 	return http.ListenAndServe(addr, nil)
 }
 
