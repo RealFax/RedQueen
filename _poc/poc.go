@@ -17,7 +17,7 @@ import (
 )
 
 type httpServer struct {
-	raft *RedQueen.Raft
+	raft *red.Raft
 	db   store.Store
 }
 
@@ -31,7 +31,7 @@ func (s *httpServer) commit(w http.ResponseWriter, r *http.Request) {
 
 	// convert http request data
 	{
-		var cmd RedQueen.LogPayload
+		var cmd red.LogPayload
 		if err = json.Unmarshal(b, &cmd); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -128,12 +128,12 @@ func main() {
 	}
 	defer db.Close()
 
-	raftServer, err := RedQueen.NewRaft(true, RedQueen.RaftConfig{
+	raftServer, err := red.NewRaft(true, red.RaftConfig{
 		ServerID:              *nodeID,
 		Addr:                  *raftAddr,
 		BoltStorePath:         "./red_queen/" + *nodeID + "/bolt",
 		FileSnapshotStorePath: "./red_queen/" + *nodeID + "/",
-		FSM:                   RedQueen.NewFSM(db),
+		FSM:                   red.NewFSM(db),
 		Clusters: func() []raft.Server {
 			c := make([]raft.Server, len(clusters))
 			for i, cluster := range clusters {
