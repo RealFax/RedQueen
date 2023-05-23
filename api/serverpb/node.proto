@@ -28,14 +28,9 @@ message AppendClusterRequest {
 
 message AppendClusterResponse {}
 
-message LeaderMonitorRequest {
-  uint32 heart_beat_rate = 1;
-}
-
+message LeaderMonitorRequest {}
 message LeaderMonitorResponse {
   bool leader = 1;
-  optional string server_addr = 2;
-  optional string server_id = 3;
 }
 
 service RedQueen {

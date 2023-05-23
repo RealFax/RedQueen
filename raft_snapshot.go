@@ -1,4 +1,4 @@
-package RedQueen
+package red
 
 import (
 	"github.com/hashicorp/raft"

@@ -1,4 +1,4 @@
-package RedQueen
+package red
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -19,12 +20,15 @@ type Server struct {
 	term      uint64 // [ATOMIC]
 	clusterID string
 
+	cfg *config.Config
+
 	store         store.Store
 	lockerBackend locker.Backend
 
-	cfg        *config.Config
 	raft       *Raft
 	grpcServer *grpc.Server
+
+	stateNotify sync.Map // map[string]chan bool
 
 	serverpb.UnimplementedKVServer
 	serverpb.UnimplementedLockerServer
@@ -91,7 +95,26 @@ func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeo
 	}
 }
 
-func (s *Server) ListenClient() error {
+func (s *Server) _stateUpdater() {
+	for {
+		select {
+		case state := <-s.raft.LeaderCh():
+			s.stateNotify.Range(func(_, val any) bool {
+				//ch, ok := val.(chan bool)
+				//if !ok {
+				//	return true
+				//}
+				//if len(ch) == cap(ch) {
+				//	return true
+				//}
+				val.(chan bool) <- state
+				return true
+			})
+		}
+	}
+}
+
+func (s *Server) ListenServer() error {
 	listener, err := net.Listen("tcp", s.cfg.Node.ListenClientAddr)
 	if err != nil {
 		return err
@@ -157,6 +180,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// init distributed lock backend
 	server.lockerBackend = NewLockerBackend(server.store, server.raftApply)
+
+	// start daemon service
+	go server._stateUpdater()
 
 	return &server, nil
 }
