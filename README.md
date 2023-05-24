@@ -1,19 +1,21 @@
 # RedQueen
 
-_灵感来源于《生化危机》中的超级计算机(Red Queen), 分布式key-value存储在分布式系统中地位与其接近_
+[简体中文](./README_zh.md)
 
-这是一个基于raft算法实现的可靠分布式key-value存储, 并在内部提供了诸如 分布式锁、服务桥...之类的高级功能
+_Inspired by the supercomputer (Red Queen) in "Resident Evil", the distributed key-value store is close to it in the distributed system_
 
-## 关于内部高级功能
-内部高级功能需要进行长时间的考验
+This is a reliable distributed key-value store based on the raft algorithm, and internal provides advanced functions such as distributed-lock, ServiceBridges...
 
-### 🧪 分布式锁 (实验功能)
-RedQueen在内部实现了一个互斥锁, 并提供grpc接口调用
+## About Internal Advanced Functions
+internal advanced functions require long-term experiments to ensure its reliability
 
-### 🔨 服务桥 (未完成)
-RedQueen在内部实现了类似服务注册的功能, 并提供grpc接口调用
+### 🧪 Distributed-lock (experimental functions)
+RedQueen internal implements a mutex and provides grpc interface calls
 
-## 🔍关键第三方库
+### 🔨 ServiceBridges (unimplemented)
+RedQueen internal implement a function similar to Service registration and discovery and provides grpc interface calls
+
+## 🔍 Third-party
 - nutsdb [(Apache License 2.0)](https://github.com/nutsdb/nutsdb/blob/master/LICENSE)
 - hashicorp raft [(MPL License 2.0)](https://github.com/hashicorp/raft/blob/main/LICENSE)
 - boltdb [(MIT License)](https://github.com/boltdb/bolt/blob/master/LICENSE)
