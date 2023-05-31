@@ -45,7 +45,7 @@ func (c *clientConn) swapLeaderConn(new string) error {
 }
 
 func (c *clientConn) listenLeader() {
-	finalTry := func(ch chan bool, conn *grpc.ClientConn) {
+	finalTry := func(conn *grpc.ClientConn) {
 		var (
 			err     error
 			monitor serverpb.RedQueen_LeaderMonitorClient
@@ -73,29 +73,16 @@ func (c *clientConn) listenLeader() {
 					if resp, err = monitor.Recv(); err != nil {
 						continue
 					}
-					ch <- resp.Leader
+					if resp.Leader {
+						_ = c.swapLeaderConn(conn.Target())
+					}
 				}
-			}
-		}
-	}
-	swapLeader := func(ch chan bool, conn *grpc.ClientConn) {
-		for {
-			select {
-			case <-c.ctx.Done():
-				return
-			case state := <-ch:
-				if !state { // next round
-					continue
-				}
-				_ = c.swapLeaderConn(conn.Target())
 			}
 		}
 	}
 
 	for _, conn := range c.readOnly {
-		ch := make(chan bool, 1)
-		go finalTry(ch, conn)
-		go swapLeader(ch, conn)
+		go finalTry(conn)
 	}
 }
 
