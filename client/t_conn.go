@@ -52,6 +52,15 @@ func (c *clientConn) listenLeader() {
 			resp    *serverpb.LeaderMonitorResponse
 			call    = serverpb.NewRedQueenClient(conn)
 		)
+
+		// make a preliminary check of to conn
+		xResp, xErr := call.RaftState(c.ctx, &serverpb.RaftStateRequest{})
+		if xErr == nil {
+			if xResp.State == serverpb.RaftState_leader {
+				_ = c.swapLeaderConn(conn.Target())
+			}
+		}
+
 		for {
 			select {
 			case <-c.ctx.Done():
