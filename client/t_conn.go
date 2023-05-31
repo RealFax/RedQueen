@@ -106,11 +106,12 @@ func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
 	}
 
 	var (
-		step     int64 = 1
-		round, _       = rand.Int(rand.Reader, big.NewInt(int64(size)))
+		step     int64
+		round, _ = rand.Int(rand.Reader, big.NewInt(int64(size)))
 	)
 
 	for _, conn := range c.readOnly {
+		step++
 		if step == round.Int64() {
 			return conn, nil
 		}
