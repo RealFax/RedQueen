@@ -3,6 +3,7 @@ module github.com/RealFax/RedQueen
 go 1.20
 
 require (
+	github.com/BurntSushi/toml v1.2.1
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/raft v1.5.0
 	github.com/hashicorp/raft-boltdb/v2 v2.2.2
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect

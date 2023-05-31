@@ -12,7 +12,7 @@ type Client struct {
 	endpoints []string
 }
 
-func New(ctx context.Context, endpoints []string) (*Client, error) {
+func New(ctx context.Context, endpoints []string, syncConn bool) (*Client, error) {
 	var (
 		err    error
 		client = &Client{
@@ -21,7 +21,7 @@ func New(ctx context.Context, endpoints []string) (*Client, error) {
 		}
 	)
 
-	if client.conn, err = newClientConn(ctx, endpoints, false); err != nil {
+	if client.conn, err = NewClientConn(ctx, endpoints, syncConn); err != nil {
 		return nil, err
 	}
 
