@@ -12,6 +12,14 @@ enum RaftLogCommand {
   Del = 4;
 }
 
+enum RaftState {
+  follower = 0;
+  candidate = 1;
+  leader = 2;
+  shutdown = 3;
+  unknown = 4;
+}
+
 message RaftLogPayload {
   RaftLogCommand command = 1;
   bytes key = 2;
@@ -33,7 +41,13 @@ message LeaderMonitorResponse {
   bool leader = 1;
 }
 
+message RaftStateRequest {}
+message RaftStateResponse {
+  RaftState state = 1;
+}
+
 service RedQueen {
   rpc AppendCluster(AppendClusterRequest) returns (AppendClusterResponse) {}
   rpc LeaderMonitor(LeaderMonitorRequest) returns (stream LeaderMonitorResponse) {}
+  rpc RaftState(RaftStateRequest) returns (RaftStateResponse) {}
 }
