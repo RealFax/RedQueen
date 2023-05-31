@@ -58,6 +58,23 @@ func (c *kvClient) Get(ctx context.Context, key []byte, namespace *string) (*Val
 	}, nil
 }
 
+func (c *kvClient) TrySet(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error {
+	client, err := newClientCall[serverpb.KVClient](true, c.conn, serverpb.NewKVClient)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.TrySet(ctx, &serverpb.SetRequest{
+		Key:         key,
+		Value:       value,
+		Ttl:         ttl,
+		IgnoreValue: ignoreBytes(key),
+		IgnoreTtl:   ignoreBytes(value),
+		Namespace:   namespace,
+	})
+	return err
+}
+
 func (c *kvClient) Delete(ctx context.Context, key []byte, namespace *string) error {
 	client, err := newClientCall[serverpb.KVClient](true, c.conn, serverpb.NewKVClient)
 	if err != nil {
