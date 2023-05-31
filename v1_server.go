@@ -32,6 +32,7 @@ type Locker interface {
 type RedQueen interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
+	RaftState(context.Context, *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error)
 }
 
 func (s *Server) responseHeader() *serverpb.ResponseHeader {
@@ -198,7 +199,7 @@ func (s *Server) LeaderMonitor(_ *serverpb.LeaderMonitorRequest, stream serverpb
 		s.stateNotify.Delete(notifyID)
 		close(notify)
 	}()
-
+	s.raft.Stats()
 	for {
 		if err := stream.Send(&serverpb.LeaderMonitorResponse{
 			Leader: <-notify,
@@ -206,5 +207,21 @@ func (s *Server) LeaderMonitor(_ *serverpb.LeaderMonitorRequest, stream serverpb
 			return err
 		}
 	}
+}
 
+func (s *Server) RaftState(_ context.Context, _ *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error) {
+	var state serverpb.RaftState
+	switch s.raft.Stats()["state"] {
+	case "Follower":
+		state = serverpb.RaftState_follower
+	case "Candidate":
+		state = serverpb.RaftState_candidate
+	case "Leader":
+		state = serverpb.RaftState_leader
+	case "Shutdown":
+		state = serverpb.RaftState_shutdown
+	case "Unknown":
+		state = serverpb.RaftState_unknown
+	}
+	return &serverpb.RaftStateResponse{State: state}, nil
 }
