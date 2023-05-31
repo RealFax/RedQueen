@@ -114,7 +114,7 @@ func (c *clientConn) WriteOnly() (*grpc.ClientConn, error) {
 	return c.writeOnly, nil
 }
 
-func newClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn, error) {
+func NewClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn, error) {
 	cc := &clientConn{
 		ctx:       ctx,
 		writeOnly: nil,

@@ -7,8 +7,8 @@ import (
 )
 
 type InternalClient interface {
-	AppendCluster(context.Context, *serverpb.AppendClusterRequest) error
-	LeaderMonitor(context.Context, *chan bool) error
+	AppendCluster(ctx context.Context, serverID string, peerAddr string, voter bool) error
+	LeaderMonitor(ctx context.Context, recv *chan bool) error
 }
 
 type internalClient struct {
@@ -16,18 +16,22 @@ type internalClient struct {
 	conn Conn
 }
 
-func (c *internalClient) AppendCluster(ctx context.Context, in *serverpb.AppendClusterRequest) error {
+func (c *internalClient) AppendCluster(ctx context.Context, serverID, peerAddr string, voter bool) error {
 	client, err := newClientCall[serverpb.RedQueenClient](true, c.conn, serverpb.NewRedQueenClient)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.AppendCluster(ctx, in)
+	_, err = client.AppendCluster(ctx, &serverpb.AppendClusterRequest{
+		ServerId: serverID,
+		PeerAddr: peerAddr,
+		Voter:    voter,
+	})
 	return err
 }
 
-func (c *internalClient) LeaderMonitor(ctx context.Context, ch *chan bool) error {
-	if len(*ch) != 0 || cap(*ch) != 1 {
+func (c *internalClient) LeaderMonitor(ctx context.Context, recv *chan bool) error {
+	if len(*recv) != 0 || cap(*recv) != 1 {
 		return errors.New("invalid receiver channel")
 	}
 
@@ -50,7 +54,7 @@ func (c *internalClient) LeaderMonitor(ctx context.Context, ch *chan bool) error
 		if resp, err = monitor.Recv(); err != nil {
 			return err
 		}
-		*ch <- resp.Leader
+		*recv <- resp.Leader
 	}
 }
 
