@@ -30,3 +30,7 @@ func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientCon
 func LockID() string {
 	return uuid.New().String()
 }
+
+func Namespace(s string) *string {
+	return &s
+}
