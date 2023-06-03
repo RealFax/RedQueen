@@ -1,47 +1,42 @@
 package red
 
 import (
-	"bytes"
 	"encoding/binary"
 	"github.com/RealFax/RedQueen/store"
 )
 
 type StableStore struct {
-	Store store.Store
+	store store.Namespace
 }
 
 func (s *StableStore) Set(key []byte, val []byte) error {
-	return s.Store.Set(key, val)
+	return s.store.Set(key, val)
 }
 
 // Get returns the value for key, or an empty byte slice if key was not found.
 func (s *StableStore) Get(key []byte) ([]byte, error) {
-	val, err := s.Store.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	return val.Data, nil
+	return store.UnwrapGet(s.store.Get(key))
 }
 
 func (s *StableStore) SetUint64(key []byte, val uint64) error {
-	buf := &bytes.Buffer{}
-	binary.Write(buf, binary.LittleEndian, val)
-	return s.Store.Set(key, buf.Bytes())
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, val)
+	return s.store.Set(key, buf)
 }
 
 // GetUint64 returns the uint64 value for key, or 0 if key was not found.
 func (s *StableStore) GetUint64(key []byte) (uint64, error) {
-	data, err := s.Store.Get(key)
+	val, err := store.UnwrapGet(s.store.Get(key))
 	if err != nil {
 		return 0, err
 	}
+	return binary.LittleEndian.Uint64(val), nil
+}
 
-	var (
-		buf = bytes.NewReader(data.Data)
-		n   uint64
-	)
-	if err = binary.Read(buf, binary.LittleEndian, &n); err != nil {
-		return 0, err
+func NewStableStore(s store.Store) (*StableStore, error) {
+	namespace, err := s.Namespace("_RaftStableStore")
+	if err != nil {
+		return nil, err
 	}
-	return n, nil
+	return &StableStore{store: namespace}, nil
 }

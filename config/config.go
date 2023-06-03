@@ -36,10 +36,9 @@ type Node struct {
 }
 
 type StoreNuts struct {
-	NodeNum    int64  `toml:"node-num"`
-	Sync       bool   `toml:"sync"`
-	StrictMode bool   `toml:"strict-mode"`
-	DataDir    string `toml:"data-dir"`
+	NodeNum    int64 `toml:"node-num"`
+	Sync       bool  `toml:"sync"`
+	StrictMode bool  `toml:"strict-mode"`
 }
 
 type Store struct {
@@ -73,7 +72,7 @@ type Security struct {
 
 type Log struct {
 	Debug bool `toml:"debug"`
-	// Logger enum: zap, capnslog
+	// Logger enum: zap, internal
 	Logger    EnumLogLogger `toml:"logger"`
 	OutputDir string        `toml:"output-dir"`
 }
@@ -126,26 +125,25 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	// main config::node
 	fs.StringVar(&cfg.Node.ID, "node-id", "", "unique node id")
 	fs.StringVar(&cfg.Node.DataDir, "data-dir", DefaultNodeDataDir, "path to the data dir")
-	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "")
-	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "")
-	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "")
+	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
+	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
+	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
 
 	// main config::store
 	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
 	// main config::store::nuts
-	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "")
-	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "")
-	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "")
-	fs.StringVar(&cfg.Store.Nuts.DataDir, "nuts-data-dir", DefaultStoreNutsDataDir, "")
+	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "nth node in the system")
+	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "enable sync write")
+	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "enable strict mode")
 
 	// main config::cluster
-	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "")
+	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "status of the cluster at startup")
 	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
 	// in cli: node-1@peer_addr,node-2@peer_addr
-	fs.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "")
+	fs.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
 
 	// main config::security
 	fs.BoolVar(&cfg.Security.EnableTLS, "enable-tls", false, "")
