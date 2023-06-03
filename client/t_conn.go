@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,11 +19,13 @@ import (
 type Conn interface {
 	ReadOnly() (*grpc.ClientConn, error)
 	WriteOnly() (*grpc.ClientConn, error)
+	Close() error
 }
 
 type clientConn struct {
-	ctx       context.Context
+	state     atomic.Bool
 	mu        sync.Mutex
+	ctx       context.Context
 	writeOnly *grpc.ClientConn
 	readOnly  map[string]*grpc.ClientConn
 
@@ -114,13 +117,32 @@ func (c *clientConn) WriteOnly() (*grpc.ClientConn, error) {
 	return c.writeOnly, nil
 }
 
+func (c *clientConn) Close() error {
+	if !c.state.Load() {
+		return errors.New("client connect has closed")
+	}
+	c.state.Store(false)
+
+	c.writeOnly.Close()
+	c.writeOnly = nil
+
+	for key, conn := range c.readOnly {
+		conn.Close()
+		delete(c.readOnly, key)
+	}
+
+	return nil
+}
+
 func NewClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn, error) {
 	cc := &clientConn{
+		state:     atomic.Bool{},
 		ctx:       ctx,
 		writeOnly: nil,
 		readOnly:  make(map[string]*grpc.ClientConn),
 		endpoints: endpoints,
 	}
+	cc.state.Store(true)
 
 	var (
 		err  error
