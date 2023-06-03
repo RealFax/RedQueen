@@ -7,19 +7,26 @@ type Client struct {
 	KvClient
 	LockerClient
 
-	conn      Conn
-	ctx       context.Context
-	endpoints []string
+	conn       Conn
+	ctx        context.Context
+	cancelFunc context.CancelFunc
+	endpoints  []string
+}
+
+func (c *Client) Close() error {
+	c.cancelFunc()
+	return c.conn.Close()
 }
 
 func New(ctx context.Context, endpoints []string, syncConn bool) (*Client, error) {
 	var (
 		err    error
 		client = &Client{
-			ctx:       ctx,
 			endpoints: endpoints,
 		}
 	)
+
+	client.ctx, client.cancelFunc = context.WithCancel(ctx)
 
 	if client.conn, err = NewClientConn(ctx, endpoints, syncConn); err != nil {
 		return nil, err
