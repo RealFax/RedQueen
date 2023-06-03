@@ -1,11 +1,13 @@
 package red
 
 import (
+	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
 	"github.com/pkg/errors"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -28,9 +30,9 @@ type LogPayload struct {
 }
 
 type RaftConfig struct {
-	ServerID, Addr, BoltStorePath, FileSnapshotStorePath string
-	FSM                                                  *FSM
-	Clusters                                             []raft.Server
+	ServerID, Addr, DataDir string
+	Store                   store.Store
+	Clusters                []raft.Server
 }
 
 type Raft struct {
@@ -41,40 +43,45 @@ func (r *Raft) AddCluster(id raft.ServerID, addr raft.ServerAddress) error {
 	return r.AddVoter(id, addr, 0, 0).Error()
 }
 
-func NewRaft(bootstrap bool, rcfg RaftConfig) (*Raft, error) {
-	cfg := raft.DefaultConfig()
-	cfg.LocalID = raft.ServerID(rcfg.ServerID)
+func NewRaft(bootstrap bool, cfg RaftConfig) (*Raft, error) {
+	raftCfg := raft.DefaultConfig()
+	raftCfg.LocalID = raft.ServerID(cfg.ServerID)
 
-	cfg.LogLevel = "INFO"
+	raftCfg.LogLevel = "WARN"
 
-	store, err := raftboltdb.NewBoltStore(rcfg.BoltStorePath)
+	logStore, err := raftboltdb.NewBoltStore(filepath.Join(cfg.DataDir, "raft-log.db"))
 	if err != nil {
-		return nil, errors.Wrap(err, "boltdb")
+		return nil, errors.Wrap(err, "raft-log")
 	}
 
-	snapshot, err := raft.NewFileSnapshotStore(rcfg.FileSnapshotStorePath, 2, os.Stderr)
+	stableStore, err := NewStableStore(cfg.Store)
+	if err != nil {
+		return nil, errors.Wrap(err, "raft-stable-store")
+	}
+
+	snapshot, err := raft.NewFileSnapshotStore(cfg.DataDir, 2, os.Stderr)
 	if err != nil {
 		return nil, errors.Wrap(err, "snapshot")
 	}
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", rcfg.Addr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", cfg.Addr)
 	if err != nil {
-		return nil, errors.Wrap(err, "resolve tcp addr")
+		return nil, errors.Wrap(err, "resolve-tcp-addr")
 	}
 
-	transport, err := raft.NewTCPTransport(rcfg.Addr, tcpAddr, 10, time.Second*5, os.Stderr)
+	transport, err := raft.NewTCPTransport(cfg.Addr, tcpAddr, 10, time.Second*5, os.Stderr)
 	if err != nil {
-		return nil, errors.Wrap(err, "tcp transport")
+		return nil, errors.Wrap(err, "tcp-transport")
 	}
 
-	r, err := raft.NewRaft(cfg, rcfg.FSM, store, store, snapshot, transport)
+	r, err := raft.NewRaft(raftCfg, NewFSM(cfg.Store), logStore, stableStore, snapshot, transport)
 	if err != nil {
 		return nil, errors.Wrap(err, "raft")
 	}
 
 	if bootstrap {
 		if err = r.BootstrapCluster(raft.Configuration{
-			Servers: rcfg.Clusters,
+			Servers: cfg.Clusters,
 		}).Error(); err != nil {
 			return nil, err
 		}
