@@ -12,7 +12,7 @@ const (
 Usage of RedQueen:
 	
 	method: server
-	example: 
+	format: 
 		./RedQueen [method] <options>
 `
 	serverUsage = `

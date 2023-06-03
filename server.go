@@ -141,7 +141,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	)
 
 	// init server store backend
-	if server.store, err = newStoreBackend(cfg.Store); err != nil {
+	if server.store, err = newStoreBackend(cfg.Store, cfg.Node.DataDir); err != nil {
 		return nil, err
 	}
 
@@ -153,11 +153,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// init server raft
 	if server.raft, err = NewRaft(cfg.Env().FirstRun(), RaftConfig{
-		ServerID:              cfg.Node.ID,
-		Addr:                  cfg.Node.ListenPeerAddr,
-		BoltStorePath:         cfg.Node.DataDir + "/bolt",
-		FileSnapshotStorePath: cfg.Node.DataDir,
-		FSM:                   NewFSM(server.store),
+		ServerID: cfg.Node.ID,
+		Addr:     cfg.Node.ListenPeerAddr,
+		DataDir:  cfg.Node.DataDir,
+		Store:    server.store,
 		Clusters: func() []raft.Server {
 			if !cfg.Env().FirstRun() {
 				return nil

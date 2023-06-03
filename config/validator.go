@@ -44,12 +44,12 @@ type EnumLogLogger string
 
 const (
 	LogLoggerZap      EnumLogLogger = "zap"
-	LogLoggerCapnslog EnumLogLogger = "capnslog"
+	LogLoggerInternal EnumLogLogger = "internal"
 )
 
 func (l EnumLogLogger) Valid() error {
 	switch l {
-	case LogLoggerZap, LogLoggerCapnslog:
+	case LogLoggerZap, LogLoggerInternal:
 		return nil
 	default:
 		return errors.New("unknown log logger type")
