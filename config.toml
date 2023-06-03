@@ -13,7 +13,6 @@ backend = "nuts"
     node-num = 1
     sync = false
     strict-mode = false
-    data-dir = "/tmp/red_queen/nuts"
 
 [cluster]
     [[cluster.bootstrap]]
@@ -47,7 +46,7 @@ peer-auto-tls = false
 
 [log]
 # logger options
-# zap, capnslog
+# zap, internal
 logger = ""
 output-dir = "/tmp/red_queen/logs"
 debug = false
