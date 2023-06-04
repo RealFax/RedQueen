@@ -27,14 +27,14 @@ func (s *StableStore) SetUint64(key []byte, val uint64) error {
 
 // GetUint64 returns the uint64 value for key, or 0 if key was not found.
 func (s *StableStore) GetUint64(key []byte) (uint64, error) {
-	val, err := store.UnwrapGet(s.store.Get(key))
+	val, err := s.store.Get(key)
 	if err != nil {
 		if err == store.ErrKeyNotFound {
 			return 0, errors.New("not found")
 		}
 		return 0, err
 	}
-	return binary.LittleEndian.Uint64(val), nil
+	return binary.LittleEndian.Uint64(val.Data), nil
 }
 
 func NewStableStore(s store.Store) (*StableStore, error) {
