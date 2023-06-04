@@ -142,7 +142,12 @@ func (s *storeAPI) GetNamespace() string {
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
-	return s._namespace(namespace)
+	n, err := s._namespace(namespace)
+	if err != nil {
+		return nil, err
+	}
+	_ = n.SetWithTTL(initBucketKey, nil, 4) // init bucket
+	return n, nil
 }
 
 func (s *storeAPI) Close() error {

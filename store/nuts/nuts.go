@@ -16,6 +16,7 @@ const (
 )
 
 var (
+	initBucketKey = []byte("_init_key")
 	ErrStateBreak = errors.New("state break")
 )
 
