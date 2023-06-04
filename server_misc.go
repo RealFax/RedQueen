@@ -2,6 +2,7 @@ package red
 
 import (
 	"context"
+	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
@@ -9,8 +10,8 @@ import (
 )
 
 type LockerBackendWrapper struct {
-	store         store.Namespace
-	raftApplyFunc func(context.Context, time.Duration, *LogPayload) (raft.ApplyFuture, error)
+	store store.Namespace
+	apply func(context.Context, *serverpb.RaftLogPayload, time.Duration) (raft.ApplyFuture, error)
 }
 
 func (w LockerBackendWrapper) Get(key []byte) (*store.Value, error) {
@@ -18,28 +19,31 @@ func (w LockerBackendWrapper) Get(key []byte) (*store.Value, error) {
 }
 
 func (w LockerBackendWrapper) TrySetWithTTL(key, value []byte, ttl uint32) error {
-	_, err := w.raftApplyFunc(context.Background(), time.Millisecond*500, &LogPayload{
-		Command: TrySetWithTTL,
-		TTL:     &ttl,
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	_, err := w.apply(ctx, &serverpb.RaftLogPayload{
+		Command: serverpb.RaftLogCommand_TrySetWithTTL,
+		Key:     key,
+		Value:   value,
 		Namespace: func() *string {
 			ptr := locker.Namespace
 			return &ptr
 		}(),
-		Key:   key,
-		Value: value,
-	})
+	}, time.Millisecond*500)
 	return err
 }
 
 func (w LockerBackendWrapper) Del(key []byte) error {
-	_, err := w.raftApplyFunc(context.Background(), time.Millisecond*1000, &LogPayload{
-		Command: Del,
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	_, err := w.apply(ctx, &serverpb.RaftLogPayload{
+		Command: serverpb.RaftLogCommand_Del,
+		Key:     key,
 		Namespace: func() *string {
 			ptr := locker.Namespace
 			return &ptr
 		}(),
-		Key: key,
-	})
+	}, time.Millisecond*500)
 	return err
 }
 
@@ -49,10 +53,10 @@ func (w LockerBackendWrapper) Watch(key []byte) (store.WatcherNotify, error) {
 
 func NewLockerBackend(
 	ns store.Namespace,
-	raftApplyFunc func(context.Context, time.Duration, *LogPayload) (raft.ApplyFuture, error),
+	raftApplyFunc func(context.Context, *serverpb.RaftLogPayload, time.Duration) (raft.ApplyFuture, error),
 ) locker.Backend {
 	return &LockerBackendWrapper{
-		store:         ns,
-		raftApplyFunc: raftApplyFunc,
+		store: ns,
+		apply: raftApplyFunc,
 	}
 }

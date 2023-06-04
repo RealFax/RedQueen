@@ -47,7 +47,7 @@ func NewRaft(bootstrap bool, cfg RaftConfig) (*Raft, error) {
 	raftCfg := raft.DefaultConfig()
 	raftCfg.LocalID = raft.ServerID(cfg.ServerID)
 
-	raftCfg.LogLevel = "WARN"
+	raftCfg.LogLevel = "INFO"
 
 	logStore, err := raftboltdb.NewBoltStore(filepath.Join(cfg.DataDir, "raft-log.db"))
 	if err != nil {
