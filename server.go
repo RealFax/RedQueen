@@ -8,7 +8,6 @@ import (
 	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"github.com/vmihailenco/msgpack/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"net"
@@ -50,30 +49,6 @@ func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {
 	return storeAPI, nil
 }
 
-func (s *Server) raftApply(ctx context.Context, timeout time.Duration, lp *LogPayload) (raft.ApplyFuture, error) {
-	cmd, err := msgpack.Marshal(lp)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		ch = make(chan raft.ApplyFuture, 1)
-	)
-
-	go func() {
-		ch <- s.raft.Apply(cmd, timeout)
-		close(ch)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, errors.Wrap(ctx.Err(), "context canceled")
-	case x := <-ch:
-		err = x.Error()
-		return x, err
-	}
-}
-
 func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) (raft.ApplyFuture, error) {
 	cmd, err := proto.Marshal(p)
 	if err != nil {
@@ -89,7 +64,7 @@ func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeo
 
 	select {
 	case <-ctx.Done():
-		return nil, errors.Wrap(ctx.Err(), "context done")
+		return nil, errors.Wrap(ctx.Err(), "context")
 	case v := <-ch:
 		return v, v.Error()
 	}
@@ -178,7 +153,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	// init distributed lock backend
-	server.lockerBackend = NewLockerBackend(server.store, server.raftApply)
+	server.lockerBackend = NewLockerBackend(server.store, server.applyLog)
 
 	// start daemon service
 	go server._stateUpdater()

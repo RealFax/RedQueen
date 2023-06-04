@@ -43,28 +43,27 @@ func (s *Server) responseHeader() *serverpb.ResponseHeader {
 }
 
 func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
-		Command: func() Command {
+	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
-				return Set
+				return serverpb.RaftLogCommand_Set
 			}
-			return SetWithTTL
+			return serverpb.RaftLogCommand_SetWithTTL
 		}(),
-		TTL: func() *uint32 {
-			return &req.Ttl
-		}(),
-		Namespace: req.Namespace,
-		Key:       req.Key,
+		Key: req.Key,
 		Value: func() []byte {
 			if req.IgnoreValue {
 				return nil
 			}
 			return req.Value
 		}(),
-	}); err != nil {
+		Ttl: func() *uint32 {
+			return &req.Ttl
+		}(),
+		Namespace: req.Namespace,
+	}, time.Millisecond*500); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
 	return &serverpb.SetResponse{Header: s.responseHeader()}, nil
 }
 
@@ -87,38 +86,38 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
-		Command: func() Command {
+	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
-				return TrySet
+				return serverpb.RaftLogCommand_TrySet
 			}
-			return TrySetWithTTL
+			return serverpb.RaftLogCommand_TrySetWithTTL
 		}(),
-		TTL: func() *uint32 {
-			return &req.Ttl
-		}(),
-		Namespace: req.Namespace,
-		Key:       req.Key,
+		Key: req.Key,
 		Value: func() []byte {
 			if req.IgnoreValue {
 				return nil
 			}
 			return req.Value
 		}(),
-	}); err != nil {
+		Ttl:       &req.Ttl,
+		Namespace: req.Namespace,
+	}, time.Millisecond*500); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return &serverpb.SetResponse{Header: s.responseHeader()}, nil
 }
 
 func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error) {
-	if _, err := s.raftApply(ctx, time.Millisecond*500, &LogPayload{
-		Command:   Del,
-		Namespace: req.Namespace,
+	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+		Command:   serverpb.RaftLogCommand_Del,
 		Key:       req.Key,
-	}); err != nil {
+		Namespace: req.Namespace,
+	}, time.Millisecond*500); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return &serverpb.DeleteResponse{Header: s.responseHeader()}, nil
 }
 
