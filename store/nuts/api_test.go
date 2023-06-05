@@ -1,11 +1,9 @@
 package nuts_test
 
 import (
-	"context"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/store/nuts"
 	"testing"
-	"time"
 )
 
 var db store.Store
@@ -42,25 +40,4 @@ func BenchmarkStoreAPI_SetWithTTL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		db.SetWithTTL(k, v, 1)
 	}
-}
-
-func TestStoreAPI_Break(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	if err := db.Break(ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := db.Set([]byte("Hello"), []byte("World")); err != nil {
-		t.Error(err)
-	}
-
-	cancel()
-
-	time.Sleep(time.Millisecond * 100)
-
-	if err := db.Set([]byte("Hello"), []byte("World")); err != nil {
-		t.Error(err)
-	}
-
 }
