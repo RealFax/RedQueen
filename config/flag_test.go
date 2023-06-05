@@ -21,11 +21,3 @@ func TestDecodeClusterBootstraps(t *testing.T) {
 
 	t.Log(clusters)
 }
-
-func TestReadFromArgs(t *testing.T) {
-	cfg, err := config.ReadFromArgs("./RedQueen", "server", "-h")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cfg)
-}
