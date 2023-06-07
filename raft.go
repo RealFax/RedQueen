@@ -30,6 +30,7 @@ type LogPayload struct {
 }
 
 type RaftConfig struct {
+	MaxSnapshots            int
 	ServerID, Addr, DataDir string
 	Store                   store.Store
 	Clusters                []raft.Server
@@ -59,7 +60,7 @@ func NewRaft(bootstrap bool, cfg RaftConfig) (*Raft, error) {
 		return nil, errors.Wrap(err, "raft-stable-store")
 	}
 
-	snapshot, err := raft.NewFileSnapshotStore(cfg.DataDir, 2, os.Stderr)
+	snapshot, err := raft.NewFileSnapshotStore(cfg.DataDir, cfg.MaxSnapshots, os.Stderr)
 	if err != nil {
 		return nil, errors.Wrap(err, "snapshot")
 	}

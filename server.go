@@ -128,10 +128,11 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// init server raft
 	if server.raft, err = NewRaft(cfg.Env().FirstRun(), RaftConfig{
-		ServerID: cfg.Node.ID,
-		Addr:     cfg.Node.ListenPeerAddr,
-		DataDir:  cfg.Node.DataDir,
-		Store:    server.store,
+		MaxSnapshots: int(cfg.Node.MaxSnapshots),
+		ServerID:     cfg.Node.ID,
+		Addr:         cfg.Node.ListenPeerAddr,
+		DataDir:      cfg.Node.DataDir,
+		Store:        server.store,
 		Clusters: func() []raft.Server {
 			if !cfg.Env().FirstRun() {
 				return nil
