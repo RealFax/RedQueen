@@ -11,7 +11,7 @@
 
 _Inspired by the supercomputer (Red Queen) in "Resident Evil", the distributed key-value store is close to it in the distributed system_
 
-This is a reliable distributed key-value store based on the raft algorithm, and internal provides advanced functions such as distributed-lock, ServiceBridges...
+This is a reliable distributed key-value store based on the raft algorithm, and internal provides advanced functions such as distributed-lock...
 
 ## Client call
 `# go get github.com/RealFax/RedQueen@latest`
@@ -23,9 +23,6 @@ internal advanced functions require long-term experiments to ensure its reliabil
 
 ### 🧪 Distributed-lock (experimental functions)
 RedQueen internal implements a mutex and provides grpc interface calls
-
-### 🔨 ServiceBridges (unimplemented)
-RedQueen internal implement a function similar to Service registration and discovery and provides grpc interface calls
 
 ## 🔍 Third-party
 - nutsdb [(Apache License 2.0)](https://github.com/nutsdb/nutsdb/blob/master/LICENSE)
