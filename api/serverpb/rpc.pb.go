@@ -20,55 +20,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ServiceHealthStatus int32
-
-const (
-	ServiceHealthStatus_Green  ServiceHealthStatus = 0 // Green: everything is working fine
-	ServiceHealthStatus_Yellow ServiceHealthStatus = 1 // Yellow: There are some problems with the service that may affect usage
-	ServiceHealthStatus_Red    ServiceHealthStatus = 2 // Red: There are some problems with the service and cannot be used normally
-)
-
-// Enum value maps for ServiceHealthStatus.
-var (
-	ServiceHealthStatus_name = map[int32]string{
-		0: "Green",
-		1: "Yellow",
-		2: "Red",
-	}
-	ServiceHealthStatus_value = map[string]int32{
-		"Green":  0,
-		"Yellow": 1,
-		"Red":    2,
-	}
-)
-
-func (x ServiceHealthStatus) Enum() *ServiceHealthStatus {
-	p := new(ServiceHealthStatus)
-	*p = x
-	return p
-}
-
-func (x ServiceHealthStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ServiceHealthStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[0].Descriptor()
-}
-
-func (ServiceHealthStatus) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[0]
-}
-
-func (x ServiceHealthStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ServiceHealthStatus.Descriptor instead.
-func (ServiceHealthStatus) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{0}
-}
-
 // --------------- Public --------------- //
 type ResponseHeader struct {
 	state         protoimpl.MessageState
@@ -955,614 +906,6 @@ func (x *TryLockResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-type RegistryServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *RegistryServiceRequest) Reset() {
-	*x = RegistryServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[15]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RegistryServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegistryServiceRequest) ProtoMessage() {}
-
-func (x *RegistryServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[15]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegistryServiceRequest.ProtoReflect.Descriptor instead.
-func (*RegistryServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{15}
-}
-
-type RegistryServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *RegistryServiceResponse) Reset() {
-	*x = RegistryServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[16]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RegistryServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegistryServiceResponse) ProtoMessage() {}
-
-func (x *RegistryServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[16]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegistryServiceResponse.ProtoReflect.Descriptor instead.
-func (*RegistryServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{16}
-}
-
-type DestroyServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *DestroyServiceRequest) Reset() {
-	*x = DestroyServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[17]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DestroyServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DestroyServiceRequest) ProtoMessage() {}
-
-func (x *DestroyServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[17]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DestroyServiceRequest.ProtoReflect.Descriptor instead.
-func (*DestroyServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{17}
-}
-
-type DestroyServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *DestroyServiceResponse) Reset() {
-	*x = DestroyServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[18]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DestroyServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DestroyServiceResponse) ProtoMessage() {}
-
-func (x *DestroyServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[18]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DestroyServiceResponse.ProtoReflect.Descriptor instead.
-func (*DestroyServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{18}
-}
-
-type KeepAliveServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *KeepAliveServiceRequest) Reset() {
-	*x = KeepAliveServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[19]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *KeepAliveServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*KeepAliveServiceRequest) ProtoMessage() {}
-
-func (x *KeepAliveServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[19]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use KeepAliveServiceRequest.ProtoReflect.Descriptor instead.
-func (*KeepAliveServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{19}
-}
-
-type KeepAliveServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *KeepAliveServiceResponse) Reset() {
-	*x = KeepAliveServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[20]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *KeepAliveServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*KeepAliveServiceResponse) ProtoMessage() {}
-
-func (x *KeepAliveServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[20]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use KeepAliveServiceResponse.ProtoReflect.Descriptor instead.
-func (*KeepAliveServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{20}
-}
-
-type QueryServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *QueryServiceRequest) Reset() {
-	*x = QueryServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[21]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryServiceRequest) ProtoMessage() {}
-
-func (x *QueryServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[21]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryServiceRequest.ProtoReflect.Descriptor instead.
-func (*QueryServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{21}
-}
-
-type QueryServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *QueryServiceResponse) Reset() {
-	*x = QueryServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[22]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryServiceResponse) ProtoMessage() {}
-
-func (x *QueryServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[22]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryServiceResponse.ProtoReflect.Descriptor instead.
-func (*QueryServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{22}
-}
-
-type ConnectServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *ConnectServiceRequest) Reset() {
-	*x = ConnectServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[23]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ConnectServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConnectServiceRequest) ProtoMessage() {}
-
-func (x *ConnectServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[23]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConnectServiceRequest.ProtoReflect.Descriptor instead.
-func (*ConnectServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{23}
-}
-
-type ConnectServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *ConnectServiceResponse) Reset() {
-	*x = ConnectServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[24]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ConnectServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConnectServiceResponse) ProtoMessage() {}
-
-func (x *ConnectServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[24]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConnectServiceResponse.ProtoReflect.Descriptor instead.
-func (*ConnectServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{24}
-}
-
-type PipelineServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *PipelineServiceRequest) Reset() {
-	*x = PipelineServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[25]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PipelineServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PipelineServiceRequest) ProtoMessage() {}
-
-func (x *PipelineServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[25]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PipelineServiceRequest.ProtoReflect.Descriptor instead.
-func (*PipelineServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{25}
-}
-
-type PipelineServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *PipelineServiceResponse) Reset() {
-	*x = PipelineServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[26]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PipelineServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PipelineServiceResponse) ProtoMessage() {}
-
-func (x *PipelineServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[26]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PipelineServiceResponse.ProtoReflect.Descriptor instead.
-func (*PipelineServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{26}
-}
-
-type HealthCheckSServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *HealthCheckSServiceRequest) Reset() {
-	*x = HealthCheckSServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[27]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *HealthCheckSServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthCheckSServiceRequest) ProtoMessage() {}
-
-func (x *HealthCheckSServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[27]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthCheckSServiceRequest.ProtoReflect.Descriptor instead.
-func (*HealthCheckSServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{27}
-}
-
-type HealthCheckSServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *HealthCheckSServiceResponse) Reset() {
-	*x = HealthCheckSServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[28]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *HealthCheckSServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthCheckSServiceResponse) ProtoMessage() {}
-
-func (x *HealthCheckSServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[28]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthCheckSServiceResponse.ProtoReflect.Descriptor instead.
-func (*HealthCheckSServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{28}
-}
-
-type HealthCheckRServiceRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *HealthCheckRServiceRequest) Reset() {
-	*x = HealthCheckRServiceRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[29]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *HealthCheckRServiceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthCheckRServiceRequest) ProtoMessage() {}
-
-func (x *HealthCheckRServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[29]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthCheckRServiceRequest.ProtoReflect.Descriptor instead.
-func (*HealthCheckRServiceRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{29}
-}
-
-type HealthCheckRServiceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *HealthCheckRServiceResponse) Reset() {
-	*x = HealthCheckRServiceResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[30]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *HealthCheckRServiceResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthCheckRServiceResponse) ProtoMessage() {}
-
-func (x *HealthCheckRServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[30]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthCheckRServiceResponse.ProtoReflect.Descriptor instead.
-func (*HealthCheckRServiceResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{30}
-}
-
 var File_rpc_proto protoreflect.FileDescriptor
 
 var file_rpc_proto_rawDesc = []byte{
@@ -1655,109 +998,40 @@ var file_rpc_proto_rawDesc = []byte{
 	0x4c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x30, 0x0a, 0x06,
 	0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x73,
 	0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x22, 0x18,
-	0x0a, 0x16, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x19, 0x0a, 0x17, 0x52, 0x65, 0x67, 0x69,
-	0x73, 0x74, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x17, 0x0a, 0x15, 0x44, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x79, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x18, 0x0a, 0x16,
-	0x44, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x19, 0x0a, 0x17, 0x4b, 0x65, 0x65, 0x70, 0x41, 0x6c,
-	0x69, 0x76, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x22, 0x1a, 0x0a, 0x18, 0x4b, 0x65, 0x65, 0x70, 0x41, 0x6c, 0x69, 0x76, 0x65, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x15, 0x0a,
-	0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x22, 0x16, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x0a, 0x15,
-	0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x18, 0x0a, 0x16, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x18, 0x0a, 0x16, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69,
-	0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x19, 0x0a, 0x17, 0x50, 0x69, 0x70,
-	0x65, 0x6c, 0x69, 0x6e, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x0a, 0x1a, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x53, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x22, 0x1d, 0x0a, 0x1b, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63,
-	0x6b, 0x53, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x1c, 0x0a, 0x1a, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b,
-	0x52, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22,
-	0x1d, 0x0a, 0x1b, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x53,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2a, 0x35,
-	0x0a, 0x13, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x53,
-	0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x09, 0x0a, 0x05, 0x47, 0x72, 0x65, 0x65, 0x6e, 0x10, 0x00,
-	0x12, 0x0a, 0x0a, 0x06, 0x59, 0x65, 0x6c, 0x6c, 0x6f, 0x77, 0x10, 0x01, 0x12, 0x07, 0x0a, 0x03,
-	0x52, 0x65, 0x64, 0x10, 0x02, 0x32, 0xa6, 0x02, 0x0a, 0x02, 0x4b, 0x56, 0x12, 0x34, 0x0a, 0x03,
-	0x53, 0x65, 0x74, 0x12, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53,
-	0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x73, 0x65, 0x72, 0x76,
-	0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x00, 0x12, 0x34, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76,
-	0x65, 0x72, 0x70, 0x62, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x15, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x37, 0x0a, 0x06, 0x54, 0x72, 0x79, 0x53,
-	0x65, 0x74, 0x12, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65,
+	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x32, 0xa6,
+	0x02, 0x0a, 0x02, 0x4b, 0x56, 0x12, 0x34, 0x0a, 0x03, 0x53, 0x65, 0x74, 0x12, 0x14, 0x2e, 0x73,
+	0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x15, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x34, 0x0a, 0x03, 0x47,
+	0x65, 0x74, 0x12, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x47, 0x65,
 	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65,
-	0x72, 0x70, 0x62, 0x2e, 0x53, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x00, 0x12, 0x3d, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x17, 0x2e, 0x73, 0x65,
-	0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e,
-	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
-	0x12, 0x3c, 0x0a, 0x05, 0x57, 0x61, 0x74, 0x63, 0x68, 0x12, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76,
-	0x65, 0x72, 0x70, 0x62, 0x2e, 0x57, 0x61, 0x74, 0x63, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x17, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x57, 0x61, 0x74,
-	0x63, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x32, 0xc2,
-	0x01, 0x0a, 0x06, 0x4c, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x12, 0x37, 0x0a, 0x04, 0x4c, 0x6f, 0x63,
-	0x6b, 0x12, 0x15, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x4c, 0x6f, 0x63,
-	0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65,
-	0x72, 0x70, 0x62, 0x2e, 0x4c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x00, 0x12, 0x3d, 0x0a, 0x06, 0x55, 0x6e, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x17, 0x2e, 0x73,
-	0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x55, 0x6e, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62,
-	0x2e, 0x55, 0x6e, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x00, 0x12, 0x40, 0x0a, 0x07, 0x54, 0x72, 0x79, 0x4c, 0x6f, 0x63, 0x6b, 0x12, 0x18, 0x2e, 0x73,
-	0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x54, 0x72, 0x79, 0x4c, 0x6f, 0x63, 0x6b, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70,
-	0x62, 0x2e, 0x54, 0x72, 0x79, 0x4c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x00, 0x32, 0xf1, 0x04, 0x0a, 0x0d, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x42,
-	0x72, 0x69, 0x64, 0x67, 0x65, 0x12, 0x51, 0x0a, 0x08, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65,
-	0x72, 0x12, 0x20, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x52, 0x65, 0x67,
-	0x69, 0x73, 0x74, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x52,
-	0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4e, 0x0a, 0x07, 0x44, 0x65, 0x73, 0x74,
-	0x72, 0x6f, 0x79, 0x12, 0x1f, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x44,
-	0x65, 0x73, 0x74, 0x72, 0x6f, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e,
-	0x44, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x48, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x12, 0x1d, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x1e, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x00, 0x12, 0x4e, 0x0a, 0x07, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x12, 0x1f, 0x2e,
-	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63,
-	0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x00, 0x12, 0x55, 0x0a, 0x08, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x20,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69,
-	0x6e, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x21, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x50, 0x69, 0x70, 0x65,
-	0x6c, 0x69, 0x6e, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x12, 0x64, 0x0a, 0x11, 0x48, 0x65, 0x61,
-	0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x53, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x12, 0x24,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x53, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e,
-	0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x53, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x12,
-	0x66, 0x0a, 0x13, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x65,
-	0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x12, 0x24, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70,
-	0x62, 0x2e, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x73,
-	0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x52, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2f, 0x3b, 0x73, 0x65,
-	0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x72, 0x70, 0x62, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x00, 0x12, 0x37, 0x0a, 0x06, 0x54, 0x72, 0x79, 0x53, 0x65, 0x74, 0x12, 0x14, 0x2e, 0x73, 0x65,
+	0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x15, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x53, 0x65, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3d, 0x0a, 0x06, 0x44, 0x65,
+	0x6c, 0x65, 0x74, 0x65, 0x12, 0x17, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e,
+	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3c, 0x0a, 0x05, 0x57, 0x61, 0x74,
+	0x63, 0x68, 0x12, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x57, 0x61,
+	0x74, 0x63, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x73, 0x65, 0x72,
+	0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x57, 0x61, 0x74, 0x63, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x32, 0xc2, 0x01, 0x0a, 0x06, 0x4c, 0x6f, 0x63, 0x6b,
+	0x65, 0x72, 0x12, 0x37, 0x0a, 0x04, 0x4c, 0x6f, 0x63, 0x6b, 0x12, 0x15, 0x2e, 0x73, 0x65, 0x72,
+	0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x4c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x4c, 0x6f, 0x63,
+	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3d, 0x0a, 0x06, 0x55,
+	0x6e, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x17, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62,
+	0x2e, 0x55, 0x6e, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18,
+	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x55, 0x6e, 0x6c, 0x6f, 0x63, 0x6b,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x40, 0x0a, 0x07, 0x54, 0x72,
+	0x79, 0x4c, 0x6f, 0x63, 0x6b, 0x12, 0x18, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62,
+	0x2e, 0x54, 0x72, 0x79, 0x4c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x19, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x54, 0x72, 0x79, 0x4c, 0x6f,
+	0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x0d, 0x5a, 0x0b,
+	0x2e, 0x2f, 0x3b, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1772,82 +1046,50 @@ func file_rpc_proto_rawDescGZIP() []byte {
 	return file_rpc_proto_rawDescData
 }
 
-var file_rpc_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_rpc_proto_goTypes = []interface{}{
-	(ServiceHealthStatus)(0),            // 0: serverpb.ServiceHealthStatus
-	(*ResponseHeader)(nil),              // 1: serverpb.ResponseHeader
-	(*SetRequest)(nil),                  // 2: serverpb.SetRequest
-	(*SetResponse)(nil),                 // 3: serverpb.SetResponse
-	(*GetRequest)(nil),                  // 4: serverpb.GetRequest
-	(*GetResponse)(nil),                 // 5: serverpb.GetResponse
-	(*DeleteRequest)(nil),               // 6: serverpb.DeleteRequest
-	(*DeleteResponse)(nil),              // 7: serverpb.DeleteResponse
-	(*WatchRequest)(nil),                // 8: serverpb.WatchRequest
-	(*WatchResponse)(nil),               // 9: serverpb.WatchResponse
-	(*LockRequest)(nil),                 // 10: serverpb.LockRequest
-	(*LockResponse)(nil),                // 11: serverpb.LockResponse
-	(*UnlockRequest)(nil),               // 12: serverpb.UnlockRequest
-	(*UnlockResponse)(nil),              // 13: serverpb.UnlockResponse
-	(*TryLockRequest)(nil),              // 14: serverpb.TryLockRequest
-	(*TryLockResponse)(nil),             // 15: serverpb.TryLockResponse
-	(*RegistryServiceRequest)(nil),      // 16: serverpb.RegistryServiceRequest
-	(*RegistryServiceResponse)(nil),     // 17: serverpb.RegistryServiceResponse
-	(*DestroyServiceRequest)(nil),       // 18: serverpb.DestroyServiceRequest
-	(*DestroyServiceResponse)(nil),      // 19: serverpb.DestroyServiceResponse
-	(*KeepAliveServiceRequest)(nil),     // 20: serverpb.KeepAliveServiceRequest
-	(*KeepAliveServiceResponse)(nil),    // 21: serverpb.KeepAliveServiceResponse
-	(*QueryServiceRequest)(nil),         // 22: serverpb.QueryServiceRequest
-	(*QueryServiceResponse)(nil),        // 23: serverpb.QueryServiceResponse
-	(*ConnectServiceRequest)(nil),       // 24: serverpb.ConnectServiceRequest
-	(*ConnectServiceResponse)(nil),      // 25: serverpb.ConnectServiceResponse
-	(*PipelineServiceRequest)(nil),      // 26: serverpb.PipelineServiceRequest
-	(*PipelineServiceResponse)(nil),     // 27: serverpb.PipelineServiceResponse
-	(*HealthCheckSServiceRequest)(nil),  // 28: serverpb.HealthCheckSServiceRequest
-	(*HealthCheckSServiceResponse)(nil), // 29: serverpb.HealthCheckSServiceResponse
-	(*HealthCheckRServiceRequest)(nil),  // 30: serverpb.HealthCheckRServiceRequest
-	(*HealthCheckRServiceResponse)(nil), // 31: serverpb.HealthCheckRServiceResponse
+	(*ResponseHeader)(nil),  // 0: serverpb.ResponseHeader
+	(*SetRequest)(nil),      // 1: serverpb.SetRequest
+	(*SetResponse)(nil),     // 2: serverpb.SetResponse
+	(*GetRequest)(nil),      // 3: serverpb.GetRequest
+	(*GetResponse)(nil),     // 4: serverpb.GetResponse
+	(*DeleteRequest)(nil),   // 5: serverpb.DeleteRequest
+	(*DeleteResponse)(nil),  // 6: serverpb.DeleteResponse
+	(*WatchRequest)(nil),    // 7: serverpb.WatchRequest
+	(*WatchResponse)(nil),   // 8: serverpb.WatchResponse
+	(*LockRequest)(nil),     // 9: serverpb.LockRequest
+	(*LockResponse)(nil),    // 10: serverpb.LockResponse
+	(*UnlockRequest)(nil),   // 11: serverpb.UnlockRequest
+	(*UnlockResponse)(nil),  // 12: serverpb.UnlockResponse
+	(*TryLockRequest)(nil),  // 13: serverpb.TryLockRequest
+	(*TryLockResponse)(nil), // 14: serverpb.TryLockResponse
 }
 var file_rpc_proto_depIdxs = []int32{
-	1,  // 0: serverpb.SetResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 1: serverpb.GetResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 2: serverpb.DeleteResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 3: serverpb.WatchResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 4: serverpb.LockResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 5: serverpb.UnlockResponse.header:type_name -> serverpb.ResponseHeader
-	1,  // 6: serverpb.TryLockResponse.header:type_name -> serverpb.ResponseHeader
-	2,  // 7: serverpb.KV.Set:input_type -> serverpb.SetRequest
-	4,  // 8: serverpb.KV.Get:input_type -> serverpb.GetRequest
-	2,  // 9: serverpb.KV.TrySet:input_type -> serverpb.SetRequest
-	6,  // 10: serverpb.KV.Delete:input_type -> serverpb.DeleteRequest
-	8,  // 11: serverpb.KV.Watch:input_type -> serverpb.WatchRequest
-	10, // 12: serverpb.Locker.Lock:input_type -> serverpb.LockRequest
-	12, // 13: serverpb.Locker.Unlock:input_type -> serverpb.UnlockRequest
-	14, // 14: serverpb.Locker.TryLock:input_type -> serverpb.TryLockRequest
-	16, // 15: serverpb.ServiceBridge.Register:input_type -> serverpb.RegistryServiceRequest
-	18, // 16: serverpb.ServiceBridge.Destroy:input_type -> serverpb.DestroyServiceRequest
-	22, // 17: serverpb.ServiceBridge.Query:input_type -> serverpb.QueryServiceRequest
-	24, // 18: serverpb.ServiceBridge.Connect:input_type -> serverpb.ConnectServiceRequest
-	26, // 19: serverpb.ServiceBridge.Pipeline:input_type -> serverpb.PipelineServiceRequest
-	28, // 20: serverpb.ServiceBridge.HealthCheckSender:input_type -> serverpb.HealthCheckSServiceRequest
-	30, // 21: serverpb.ServiceBridge.HealthCheckReceiver:input_type -> serverpb.HealthCheckRServiceRequest
-	3,  // 22: serverpb.KV.Set:output_type -> serverpb.SetResponse
-	5,  // 23: serverpb.KV.Get:output_type -> serverpb.GetResponse
-	3,  // 24: serverpb.KV.TrySet:output_type -> serverpb.SetResponse
-	7,  // 25: serverpb.KV.Delete:output_type -> serverpb.DeleteResponse
-	9,  // 26: serverpb.KV.Watch:output_type -> serverpb.WatchResponse
-	11, // 27: serverpb.Locker.Lock:output_type -> serverpb.LockResponse
-	13, // 28: serverpb.Locker.Unlock:output_type -> serverpb.UnlockResponse
-	15, // 29: serverpb.Locker.TryLock:output_type -> serverpb.TryLockResponse
-	17, // 30: serverpb.ServiceBridge.Register:output_type -> serverpb.RegistryServiceResponse
-	19, // 31: serverpb.ServiceBridge.Destroy:output_type -> serverpb.DestroyServiceResponse
-	23, // 32: serverpb.ServiceBridge.Query:output_type -> serverpb.QueryServiceResponse
-	25, // 33: serverpb.ServiceBridge.Connect:output_type -> serverpb.ConnectServiceResponse
-	27, // 34: serverpb.ServiceBridge.Pipeline:output_type -> serverpb.PipelineServiceResponse
-	29, // 35: serverpb.ServiceBridge.HealthCheckSender:output_type -> serverpb.HealthCheckSServiceResponse
-	31, // 36: serverpb.ServiceBridge.HealthCheckReceiver:output_type -> serverpb.HealthCheckRServiceResponse
-	22, // [22:37] is the sub-list for method output_type
-	7,  // [7:22] is the sub-list for method input_type
+	0,  // 0: serverpb.SetResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 1: serverpb.GetResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 2: serverpb.DeleteResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 3: serverpb.WatchResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 4: serverpb.LockResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 5: serverpb.UnlockResponse.header:type_name -> serverpb.ResponseHeader
+	0,  // 6: serverpb.TryLockResponse.header:type_name -> serverpb.ResponseHeader
+	1,  // 7: serverpb.KV.Set:input_type -> serverpb.SetRequest
+	3,  // 8: serverpb.KV.Get:input_type -> serverpb.GetRequest
+	1,  // 9: serverpb.KV.TrySet:input_type -> serverpb.SetRequest
+	5,  // 10: serverpb.KV.Delete:input_type -> serverpb.DeleteRequest
+	7,  // 11: serverpb.KV.Watch:input_type -> serverpb.WatchRequest
+	9,  // 12: serverpb.Locker.Lock:input_type -> serverpb.LockRequest
+	11, // 13: serverpb.Locker.Unlock:input_type -> serverpb.UnlockRequest
+	13, // 14: serverpb.Locker.TryLock:input_type -> serverpb.TryLockRequest
+	2,  // 15: serverpb.KV.Set:output_type -> serverpb.SetResponse
+	4,  // 16: serverpb.KV.Get:output_type -> serverpb.GetResponse
+	2,  // 17: serverpb.KV.TrySet:output_type -> serverpb.SetResponse
+	6,  // 18: serverpb.KV.Delete:output_type -> serverpb.DeleteResponse
+	8,  // 19: serverpb.KV.Watch:output_type -> serverpb.WatchResponse
+	10, // 20: serverpb.Locker.Lock:output_type -> serverpb.LockResponse
+	12, // 21: serverpb.Locker.Unlock:output_type -> serverpb.UnlockResponse
+	14, // 22: serverpb.Locker.TryLock:output_type -> serverpb.TryLockResponse
+	15, // [15:23] is the sub-list for method output_type
+	7,  // [7:15] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -2039,198 +1281,6 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RegistryServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RegistryServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DestroyServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DestroyServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KeepAliveServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KeepAliveServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConnectServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConnectServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PipelineServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PipelineServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HealthCheckSServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HealthCheckSServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HealthCheckRServiceRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rpc_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HealthCheckRServiceResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	file_rpc_proto_msgTypes[1].OneofWrappers = []interface{}{}
 	file_rpc_proto_msgTypes[3].OneofWrappers = []interface{}{}
@@ -2242,14 +1292,13 @@ func file_rpc_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rpc_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   31,
+			NumEnums:      0,
+			NumMessages:   15,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   2,
 		},
 		GoTypes:           file_rpc_proto_goTypes,
 		DependencyIndexes: file_rpc_proto_depIdxs,
-		EnumInfos:         file_rpc_proto_enumTypes,
 		MessageInfos:      file_rpc_proto_msgTypes,
 	}.Build()
 	File_rpc_proto = out.File
