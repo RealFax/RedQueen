@@ -159,17 +159,23 @@ func (s *storeAPI) Close() error {
 }
 
 func (s *storeAPI) Snapshot() (io.Reader, error) {
+	// get db session first
 	db, err := s.DB()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "fail snapshot, get db error")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// break db
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err = s.Break(ctx); err != nil {
+		return nil, errors.Wrap(err, "fail snapshot, break error")
+	}
 
 	if err = db.Merge(); err != nil {
-		return nil, errors.New("fatal snapshot")
+		return nil, errors.Wrap(err, "fail snapshot, merge error")
 	}
+
 	buf := &bytes.Buffer{}
 	return buf, db.View(func(tx *nutsdb.Tx) error {
 		return db.BackupTarGZ(buf)
