@@ -156,14 +156,15 @@ func TestStoreAPI_Snapshot(t *testing.T) {
 }
 
 func TestStoreAPI_Break(t *testing.T) {
+	time.Sleep(time.Millisecond * 50) // waiting quit break state
 	ctx, cancel := context.WithCancel(context.Background())
 	if err := db.Break(ctx); err != nil {
 		cancel()
 		t.Fatal(err)
 	}
 	getWithPrint(t, key, true)
-	cancel()                           // cancel break state
-	time.Sleep(time.Millisecond * 100) // waiting quit break state
+	cancel()                          // cancel break state
+	time.Sleep(time.Millisecond * 50) // waiting quit break state
 	getWithPrint(t, key, false)
 }
 
