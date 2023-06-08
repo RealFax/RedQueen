@@ -7,6 +7,7 @@ import (
 	"github.com/nutsdb/nutsdb"
 	"github.com/pkg/errors"
 	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 )
@@ -73,6 +74,8 @@ func (s *storeAPI) Get(key []byte) (*store.Value, error) {
 			}
 			return err
 		}
+		val.Timestamp = entry.Meta.Timestamp
+		val.TTL = entry.Meta.TTL
 		val.Data = entry.Value
 		return nil
 	})
@@ -155,6 +158,7 @@ func (s *storeAPI) Close() error {
 	if err != nil {
 		return err
 	}
+	s.Break(context.Background())
 	return db.Close()
 }
 
@@ -172,9 +176,10 @@ func (s *storeAPI) Snapshot() (io.Reader, error) {
 		return nil, errors.Wrap(err, "fail snapshot, break error")
 	}
 
-	if err = db.Merge(); err != nil {
-		return nil, errors.Wrap(err, "fail snapshot, merge error")
-	}
+	db.Merge()
+	//if err = db.Merge(); err != nil {
+	//	return nil, errors.Wrap(err, "fail snapshot, merge error")
+	//}
 
 	buf := &bytes.Buffer{}
 	return buf, db.View(func(tx *nutsdb.Tx) error {
@@ -200,4 +205,38 @@ func (s *storeAPI) Break(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+func (s *storeAPI) Restore(src io.Reader) (err error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	if err = s.Break(ctx); err != nil {
+		goto CancelBreak
+	}
+
+	// close nuts db
+	s.db.Close()
+
+	// clear new db files
+	if err = os.RemoveAll(s.dataDir); err != nil {
+		err = errors.Wrap(err, "clean files error")
+		goto CancelBreak
+	}
+
+	// restore old db files
+	if err = BackupReader(s.dataDir, src); err != nil {
+		err = errors.Wrap(err, "")
+		goto CancelBreak
+	}
+
+	// reopen nuts db
+	if s.db, err = nutsdb.Open(nutsdb.DefaultOptions, s.dbOptions...); err != nil {
+		goto CancelBreak
+	}
+
+	goto CancelBreak
+
+CancelBreak:
+	cancel()
+	return
 }

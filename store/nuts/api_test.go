@@ -1,12 +1,18 @@
 package nuts_test
 
 import (
+	"bytes"
+	"context"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/store/nuts"
 	"testing"
+	"time"
 )
 
-var db store.Store
+var (
+	db         store.Store
+	key, value = []byte("Hello"), []byte("World")
+)
 
 func init() {
 	var err error
@@ -18,7 +24,159 @@ func init() {
 		panic(err)
 	}
 
-	db.Set([]byte("Hello"), []byte("World"))
+	db.Set(key, value)
+}
+
+func getWithPrint(t *testing.T, key []byte, passErr bool) {
+	val, err := db.Get(key)
+	if err != nil {
+		if !passErr {
+			t.Fatal(err)
+		}
+		t.Log("PassError:", err)
+		return
+	}
+	t.Logf("Value: %s, Timestamp: %d, TTL: %d", val.Data, val.Timestamp, val.TTL)
+}
+
+func TestStoreAPI_Get(t *testing.T) {
+	getWithPrint(t, key, false)
+}
+
+func TestStoreAPI_SetWithTTL(t *testing.T) {
+	if err := db.SetWithTTL([]byte("SetWithTTLKey"), []byte("SetWithTTlValue"), 16); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("SetWithTTLKey"), false)
+}
+
+func TestStoreAPI_Set(t *testing.T) {
+	if err := db.Set([]byte("SetKey"), []byte("SetValue")); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("SetKey"), false)
+}
+
+func TestStoreAPI_TrySetWithTTL(t *testing.T) {
+	if err := db.TrySetWithTTL([]byte("TrySetWithTTLKey"), []byte("TrySetWithTTLValue"), 16); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("TrySetWithTTLKey"), false)
+
+	if err := db.TrySetWithTTL([]byte("TrySetWithTTLKey"), nil, 16); err != nil {
+		t.Log("expected error:", err)
+	}
+	getWithPrint(t, []byte("TrySetWithTTLKey"), false)
+}
+
+func TestStoreAPI_TrySet(t *testing.T) {
+	if err := db.TrySet([]byte("TrySetKey"), []byte("TrySetValue")); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("TrySetKey"), false)
+
+	if err := db.TrySet([]byte("TrySetKey"), nil); err != nil {
+		t.Log("expected error:", err)
+	}
+	getWithPrint(t, []byte("TrySetKey"), false)
+}
+
+func TestStoreAPI_Del(t *testing.T) {
+	if err := db.Set([]byte("DelKey"), []byte("DelValue")); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("DelKey"), false)
+
+	if err := db.Del([]byte("DelKey")); err != nil {
+		t.Fatal(err)
+	}
+	getWithPrint(t, []byte("DelKey"), true)
+}
+
+func TestStoreAPI_Watch(t *testing.T) {
+	// watch before set, strict mode must be disabled first
+	nuts.DisableStrictMode()
+
+	notify, err := db.Watch(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		t.Log("[+] Started watch")
+		for {
+			select {
+			case val := <-notify.Notify():
+				t.Logf("Seq: %d, Timestamp: %d, Data: %s", val.Seq, val.Timestamp, *val.Data)
+			case <-ctx.Done():
+				t.Log("[+] End watch")
+				notify.Close()
+				return
+			}
+		}
+	}()
+
+	time.Sleep(time.Second * 1)
+
+	for i := 0; i < 10; i++ {
+		if err = db.Set(keys[0], []byte("Hello, Watcher")); err != nil {
+			t.Fatal("set failed:", err)
+		}
+		time.Sleep(time.Millisecond * 300)
+	}
+
+	t.Log("[+] waiting watcher...")
+
+	time.Sleep(time.Second * 1)
+
+	cancel()
+
+	time.Sleep(time.Second * 1)
+}
+
+func TestStoreAPI_Namespace(t *testing.T) {
+	t.Logf("current namespace: %s", db.GetNamespace())
+	namespace, err := db.Namespace("NextNamespace")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("current namespace: %s", namespace.GetNamespace())
+}
+
+func TestStoreAPI_Snapshot(t *testing.T) {
+	snapshot, err := db.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("snapshot size: %d", snapshot.(*bytes.Buffer).Len())
+}
+
+func TestStoreAPI_Break(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := db.Break(ctx); err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	getWithPrint(t, key, true)
+	cancel()                           // cancel break state
+	time.Sleep(time.Millisecond * 100) // waiting quit break state
+	getWithPrint(t, key, false)
+}
+
+func TestStoreAPI_Restore(t *testing.T) {
+	snapshot, err := db.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("snapshot size: %d", snapshot.(*bytes.Buffer).Len())
+
+	if err = db.Restore(snapshot); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Millisecond * 100) // waiting quit break state
+	getWithPrint(t, key, false)
 }
 
 func BenchmarkStoreAPI_Get(b *testing.B) {
