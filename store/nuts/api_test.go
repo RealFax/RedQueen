@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/store/nuts"
+	"os"
 	"testing"
 	"time"
 )
@@ -15,6 +16,7 @@ var (
 )
 
 func init() {
+	os.RemoveAll("/tmp/nuts-db")
 	var err error
 	if db, err = nuts.New(nuts.Config{
 		NodeNum: 1,
@@ -171,11 +173,11 @@ func TestStoreAPI_Restore(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("snapshot size: %d", snapshot.(*bytes.Buffer).Len())
-
+	time.Sleep(time.Millisecond * 50) // waiting quit break state
 	if err = db.Restore(snapshot); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(time.Millisecond * 100) // waiting quit break state
+	time.Sleep(time.Millisecond * 50) // waiting quit break state
 	getWithPrint(t, key, false)
 }
 
