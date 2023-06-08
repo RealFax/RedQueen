@@ -39,7 +39,8 @@ type Config struct {
 type storeAPI struct {
 	state *uint32 // atomic
 
-	db *nutsdb.DB
+	db        *nutsdb.DB
+	dbOptions []nutsdb.Option
 
 	// root watcher
 	watcher *Watcher
@@ -49,16 +50,17 @@ type storeAPI struct {
 
 	mu        sync.Mutex
 	namespace string
+	dataDir   string
 }
 
 func New(cfg Config) (store.Store, error) {
-	db, err := nutsdb.Open(
-		nutsdb.DefaultOptions,
+	opts := []nutsdb.Option{
 		nutsdb.WithDir(cfg.DataDir),
 		nutsdb.WithSyncEnable(cfg.Sync),
 		nutsdb.WithNodeNum(cfg.NodeNum),
 		// nutsdb.WithSegmentSize(cfg.SegmentSize),
-	)
+	}
+	db, err := nutsdb.Open(nutsdb.DefaultOptions, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create nuts store api")
 	}
@@ -68,8 +70,10 @@ func New(cfg Config) (store.Store, error) {
 	return &storeAPI{
 		state:        new(uint32),
 		db:           db,
+		dbOptions:    opts,
 		watcher:      rootWatcher,
 		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
 		namespace:    store.DefaultNamespace,
+		dataDir:      cfg.DataDir,
 	}, nil
 }

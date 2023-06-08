@@ -6,7 +6,9 @@ import (
 )
 
 type Value struct {
-	Data []byte
+	Timestamp uint64
+	TTL       uint32
+	Data      []byte
 }
 
 func NewValue(data []byte) *Value {
@@ -50,4 +52,5 @@ type Store interface {
 	// Snapshot should be in tar & gzip format
 	Snapshot() (io.Reader, error)
 	Break(context.Context) error
+	Restore(src io.Reader) (err error)
 }
