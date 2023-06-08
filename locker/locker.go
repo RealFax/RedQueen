@@ -3,12 +3,10 @@ package locker
 import (
 	"github.com/RealFax/RedQueen/store"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const (
 	Namespace string = "_Locker"
-	TTL              = time.Second * 30
 )
 
 var (
