@@ -42,6 +42,11 @@ func BackupReader(dst string, src io.Reader) error {
 			return err
 		}
 
+		// check if the path is vulnerable
+		if strings.Contains(header.FileInfo().Name(), "..") {
+			continue
+		}
+
 		path := filepath.Join(dst, header.Name)
 
 		// handle dir
