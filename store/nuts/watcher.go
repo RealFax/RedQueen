@@ -1,13 +1,22 @@
 package nuts
 
 import (
+	"encoding/json"
 	"github.com/RealFax/RedQueen/store"
+	"github.com/RealFax/RedQueen/utils"
 	"github.com/google/uuid"
 	"sync"
 	"time"
 )
 
 const WatcherNotifyValueSize = 1024
+
+type WatcherMetadata map[string]map[uint64]map[string]int
+
+func (m *WatcherMetadata) String() string {
+	out, _ := json.MarshalIndent(m, "", "\t")
+	return utils.Bytes2String(out)
+}
 
 type WatcherNotify struct {
 	unwatchedFunc func()
@@ -31,6 +40,15 @@ type WatcherChannel struct {
 	LastUpdate int64
 	Value      *[]byte
 	Notify     sync.Map // map[string]*WatcherNotify
+}
+
+func (c *WatcherChannel) Get() map[string]int {
+	m := make(map[string]int)
+	c.Notify.Range(func(key, value any) bool {
+		m[key.(string)] = len(value.(*WatcherNotify).Values)
+		return true
+	})
+	return m
 }
 
 func (c *WatcherChannel) AddNotify(dest *WatcherNotify) {
@@ -81,6 +99,15 @@ type WatcherChild struct {
 	Channels  sync.Map // map[uint64]*WatcherChannel
 }
 
+func (c *WatcherChild) Get() map[uint64]map[string]int {
+	m := make(map[uint64]map[string]int)
+	c.Channels.Range(func(key, value any) bool {
+		m[key.(uint64)] = value.(*WatcherChannel).Get()
+		return true
+	})
+	return m
+}
+
 func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
 	watchKey := WatchKey(key)
 
@@ -122,6 +149,15 @@ func (c *WatcherChild) Update(key, value []byte) {
 
 type Watcher struct {
 	Namespaces sync.Map // map[string]*WatcherChild
+}
+
+func (w *Watcher) Get() *WatcherMetadata {
+	m := make(map[string]map[uint64]map[string]int)
+	w.Namespaces.Range(func(key, value any) bool {
+		m[key.(string)] = value.(*WatcherChild).Get()
+		return true
+	})
+	return (*WatcherMetadata)(&m)
 }
 
 func (w *Watcher) Namespace(namespace string) *WatcherChild {
