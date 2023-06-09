@@ -144,6 +144,10 @@ func (s *storeAPI) GetNamespace() string {
 	return s.namespace
 }
 
+func (s *storeAPI) GetWatch() store.WatcherMetadata {
+	return s.watcher.Get()
+}
+
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
 	n, err := s._namespace(namespace)
 	if err != nil {

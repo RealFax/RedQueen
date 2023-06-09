@@ -33,6 +33,10 @@ type WatcherNotify interface {
 	Close() error
 }
 
+type WatcherMetadata interface {
+	String() string
+}
+
 type Base interface {
 	GetNamespace() string
 	Get(key []byte) (value *Value, err error)
@@ -47,6 +51,7 @@ type Base interface {
 
 type Store interface {
 	Base
+	GetWatch() WatcherMetadata
 	Namespace(namespace string) (Namespace, error)
 	Close() error
 	// Snapshot should be in tar & gzip format
