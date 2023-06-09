@@ -2,6 +2,7 @@ package nuts_test
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/RealFax/RedQueen/store/nuts"
 	"strconv"
 	"testing"
@@ -45,9 +46,11 @@ func TestWatcher(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		child.Update(keys[0], []byte("VALUE_"+strconv.Itoa(i)))
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Millisecond * 300)
 	}
 
+	out, _ := json.MarshalIndent(watcher.Get(), "", "\t")
+	t.Logf("\n%s", out)
 	cancel()
 
 	time.Sleep(time.Second * 1)

@@ -1,6 +1,7 @@
 package red
 
 import (
+	"bytes"
 	"github.com/hashicorp/raft"
 	"io"
 )
@@ -17,4 +18,11 @@ func (s *Snapshot) Persist(sink raft.SnapshotSink) error {
 	return sink.Close()
 }
 
-func (s *Snapshot) Release() {}
+func (s *Snapshot) Release() {
+	p, ok := s.Reader.(*bytes.Buffer)
+	if !ok {
+		return
+	}
+	p.Reset()
+	p = nil
+}

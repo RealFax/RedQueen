@@ -119,7 +119,8 @@ func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
 }
 
 func (f *FSM) Restore(rc io.ReadCloser) error {
-	return rc.Close()
+	defer rc.Close()
+	return f.store.Restore(rc)
 }
 
 func NewFSM(s store.Store) *FSM {
