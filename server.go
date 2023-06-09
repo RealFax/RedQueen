@@ -127,7 +127,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	serverpb.RegisterRedQueenServer(server.grpcServer, &server)
 
 	// init server raft
-	if server.raft, err = NewRaft(cfg.Env().FirstRun(), RaftConfig{
+	if server.raft, err = NewRaft(RaftConfig{
+		Bootstrap:    cfg.Env().FirstRun(),
 		MaxSnapshots: int(cfg.Node.MaxSnapshots),
 		ServerID:     cfg.Node.ID,
 		Addr:         cfg.Node.ListenPeerAddr,
@@ -137,7 +138,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			if !cfg.Env().FirstRun() {
 				return nil
 			}
-
 			clusters := make([]raft.Server, len(cfg.Cluster.Bootstrap))
 			for i, v := range cfg.Cluster.Bootstrap {
 				clusters[i] = raft.Server{
@@ -146,10 +146,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 					Address:  raft.ServerAddress(v.PeerAddr),
 				}
 			}
-
 			return clusters
 		}(),
 	}); err != nil {
+		return nil, err
+	}
+
+	if server.raft, err = NewRaftWithOptions(); err != nil {
 		return nil, err
 	}
 
