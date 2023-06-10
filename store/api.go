@@ -8,6 +8,7 @@ import (
 type Value struct {
 	Timestamp uint64
 	TTL       uint32
+	Key       []byte
 	Data      []byte
 }
 
@@ -40,6 +41,8 @@ type WatcherMetadata interface {
 type Base interface {
 	GetNamespace() string
 	Get(key []byte) (value *Value, err error)
+	PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*Value, error)
+	PrefixScan(prefix []byte, offset, limit int) ([]*Value, error)
 	SetWithTTL(key, value []byte, ttl uint32) error
 	TrySetWithTTL(key, value []byte, ttl uint32) error
 	Set(key, value []byte) error

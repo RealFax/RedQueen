@@ -18,6 +18,7 @@ import (
 type KV interface {
 	Set(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
 	Get(context.Context, *serverpb.GetRequest) (*serverpb.GetResponse, error)
+	PrefixScan(context.Context, *serverpb.PrefixScanRequest) (*serverpb.PrefixScanResponse, error)
 	TrySet(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
 	Delete(context.Context, *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error)
 	Watch(*serverpb.WatchRequest, serverpb.KV_WatchServer) error
@@ -81,7 +82,35 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 	return &serverpb.GetResponse{
 		Header: s.responseHeader(),
 		Value:  value.Data,
-		Ttl:    nil, // unimplemented
+		Ttl:    value.TTL,
+	}, nil
+}
+
+func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) (*serverpb.PrefixScanResponse, error) {
+	storeAPI, err := s.currentNamespace(req.Namespace)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	result, err := storeAPI.PrefixSearchScan(req.Prefix, req.GetReg(), int(req.Offset), int(req.Limit))
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	return &serverpb.PrefixScanResponse{
+		Header: s.responseHeader(),
+		Result: func() []*serverpb.PrefixScanResponse_PrefixScanResult {
+			sres := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(result))
+			for i, value := range result {
+				sres[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
+					Key:       value.Key,
+					Value:     value.Data,
+					Timestamp: value.Timestamp,
+					Ttl:       value.TTL,
+				}
+			}
+			return sres
+		}(),
 	}, nil
 }
 
