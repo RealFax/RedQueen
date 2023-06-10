@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type KVClient interface {
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	PrefixScan(ctx context.Context, in *PrefixScanRequest, opts ...grpc.CallOption) (*PrefixScanResponse, error)
 	TrySet(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (KV_WatchClient, error)
@@ -49,6 +50,15 @@ func (c *kVClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOpt
 func (c *kVClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
 	out := new(GetResponse)
 	err := c.cc.Invoke(ctx, "/serverpb.KV/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVClient) PrefixScan(ctx context.Context, in *PrefixScanRequest, opts ...grpc.CallOption) (*PrefixScanResponse, error) {
+	out := new(PrefixScanResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.KV/PrefixScan", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +121,7 @@ func (x *kVWatchClient) Recv() (*WatchResponse, error) {
 type KVServer interface {
 	Set(context.Context, *SetRequest) (*SetResponse, error)
 	Get(context.Context, *GetRequest) (*GetResponse, error)
+	PrefixScan(context.Context, *PrefixScanRequest) (*PrefixScanResponse, error)
 	TrySet(context.Context, *SetRequest) (*SetResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	Watch(*WatchRequest, KV_WatchServer) error
@@ -126,6 +137,9 @@ func (UnimplementedKVServer) Set(context.Context, *SetRequest) (*SetResponse, er
 }
 func (UnimplementedKVServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedKVServer) PrefixScan(context.Context, *PrefixScanRequest) (*PrefixScanResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PrefixScan not implemented")
 }
 func (UnimplementedKVServer) TrySet(context.Context, *SetRequest) (*SetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TrySet not implemented")
@@ -181,6 +195,24 @@ func _KV_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{})
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KVServer).Get(ctx, req.(*GetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KV_PrefixScan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrefixScanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServer).PrefixScan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.KV/PrefixScan",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServer).PrefixScan(ctx, req.(*PrefixScanRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -256,6 +288,10 @@ var KV_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _KV_Get_Handler,
+		},
+		{
+			MethodName: "PrefixScan",
+			Handler:    _KV_PrefixScan_Handler,
 		},
 		{
 			MethodName: "TrySet",
