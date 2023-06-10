@@ -7,12 +7,14 @@ import (
 
 type Value struct {
 	Data []byte
-	TTL  *uint32
+	TTL  uint32
 }
 
 type KvClient interface {
 	Set(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error
 	Get(ctx context.Context, key []byte, namespace *string) (*Value, error)
+	PrefixScan(ctx context.Context, prefix []byte, offset, limit uint64, reg, namespace *string) ([]*Value, error)
+	TrySet(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error
 	Delete(ctx context.Context, key []byte, namespace *string) error
 	Watch(ctx context.Context, watcher *Watcher) error
 }
@@ -56,6 +58,35 @@ func (c *kvClient) Get(ctx context.Context, key []byte, namespace *string) (*Val
 		Data: resp.Value,
 		TTL:  resp.Ttl,
 	}, nil
+}
+
+func (c *kvClient) PrefixScan(ctx context.Context, prefix []byte, offset, limit uint64, reg, namespace *string) ([]*Value, error) {
+	client, err := newClientCall[serverpb.KVClient](false, c.conn, serverpb.NewKVClient)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.PrefixScan(ctx, &serverpb.PrefixScanRequest{
+		Prefix:    prefix,
+		Offset:    offset,
+		Limit:     limit,
+		Reg:       reg,
+		Namespace: namespace,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return func() []*Value {
+		sres := make([]*Value, len(resp.Result))
+		for i, result := range resp.Result {
+			sres[i] = &Value{
+				Data: result.Value,
+				TTL:  result.Ttl,
+			}
+		}
+		return sres
+	}(), err
 }
 
 func (c *kvClient) TrySet(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error {

@@ -76,9 +76,43 @@ func (s *storeAPI) Get(key []byte) (*store.Value, error) {
 		}
 		val.Timestamp = entry.Meta.Timestamp
 		val.TTL = entry.Meta.TTL
+		val.Key = entry.Key
 		val.Data = entry.Value
 		return nil
 	})
+}
+
+func (s *storeAPI) PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*store.Value, error) {
+	val := make([]*store.Value, 0, limit-offset)
+	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
+		var (
+			err     error
+			entries nutsdb.Entries
+		)
+
+		if reg != "" {
+			entries, _, err = tx.PrefixSearchScan(s.namespace, prefix, reg, offset, limit)
+		} else {
+			entries, _, err = tx.PrefixScan(s.namespace, prefix, offset, limit)
+		}
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range entries {
+			val = append(val, &store.Value{
+				Timestamp: entry.Meta.Timestamp,
+				TTL:       entry.Meta.TTL,
+				Key:       entry.Key,
+				Data:      entry.Value,
+			})
+		}
+		return nil
+	})
+}
+
+func (s *storeAPI) PrefixScan(prefix []byte, offset, limit int) ([]*store.Value, error) {
+	return s.PrefixSearchScan(prefix, "", offset, limit)
 }
 
 func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
