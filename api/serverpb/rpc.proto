@@ -51,7 +51,26 @@ message GetRequest {
 message GetResponse {
   ResponseHeader header = 1;
   bytes value = 2;
-  optional uint32 ttl = 3;
+  uint32 ttl = 3;
+}
+
+message PrefixScanRequest {
+  bytes prefix = 1;
+  uint64 offset = 2;
+  uint64 limit = 3;
+  optional string reg = 4;
+  optional string namespace = 5;
+}
+
+message PrefixScanResponse {
+  message PrefixScanResult {
+    bytes key = 1;
+    bytes value = 2;
+    uint64 timestamp = 3;
+    uint32 ttl = 4;
+  }
+  ResponseHeader header = 1;
+  repeated PrefixScanResult result = 2;
 }
 
 message DeleteRequest {
@@ -89,6 +108,7 @@ message WatchResponse {
 service KV {
   rpc Set(SetRequest) returns (SetResponse) {}
   rpc Get(GetRequest) returns (GetResponse) {}
+  rpc PrefixScan(PrefixScanRequest) returns (PrefixScanResponse) {}
   rpc TrySet(SetRequest) returns (SetResponse) {}
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
   rpc Watch(WatchRequest) returns (stream WatchResponse) {}

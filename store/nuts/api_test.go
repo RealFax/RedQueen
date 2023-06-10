@@ -6,6 +6,7 @@ import (
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/store/nuts"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -43,6 +44,33 @@ func getWithPrint(t *testing.T, key []byte, passErr bool) {
 
 func TestStoreAPI_Get(t *testing.T) {
 	getWithPrint(t, key, false)
+}
+
+func TestStoreAPI_PrefixSearchScan(t *testing.T) {
+	for off := 0; off < 10; off++ {
+		db.Set([]byte("user_"+strconv.Itoa(off)+"_state"), []byte(strconv.Itoa(off)))
+	}
+
+	result, err := db.PrefixSearchScan([]byte("user_"), "[^0-9_]", 0, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, v := range result {
+		t.Logf("Value: %s, Timestamp: %d, TTL: %d", v.Data, v.Timestamp, v.TTL)
+	}
+}
+
+func TestStoreAPI_PrefixScan(t *testing.T) {
+	for off := 0; off < 100; off++ {
+		db.Set([]byte("user_"+strconv.Itoa(off)+"_state"), []byte(strconv.Itoa(off)))
+	}
+
+	result, err := db.PrefixScan([]byte("user_"), 0, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("Result size: ", len(result))
 }
 
 func TestStoreAPI_SetWithTTL(t *testing.T) {
