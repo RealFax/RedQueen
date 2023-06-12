@@ -69,7 +69,3 @@ func (p FilePath) Valid() error {
 type stringValidator interface {
 	EnumStoreBackend | EnumClusterState | EnumLogLogger | FilePath
 }
-
-func Validate() {
-
-}
