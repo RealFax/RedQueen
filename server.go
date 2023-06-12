@@ -24,8 +24,9 @@ type Server struct {
 	store         store.Store
 	lockerBackend locker.Backend
 
-	raft       *Raft
-	grpcServer *grpc.Server
+	raft        *Raft
+	grpcServer  *grpc.Server
+	pprofServer *pprofServer
 
 	stateNotify sync.Map // map[string]chan bool
 
@@ -102,6 +103,10 @@ func (s *Server) Close() (err error) {
 		return
 	}
 	s.grpcServer.Stop()
+
+	if s.cfg.PPROF {
+		err = s.pprofServer.Close()
+	}
 	return
 }
 
@@ -114,6 +119,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}
 		err error
 	)
+
+	if cfg.PPROF {
+		server.pprofServer, err = newPprofServer()
+		if err != nil {
+			return nil, errors.Wrap(err, "pprof server")
+		}
+		go server.pprofServer.Run()
+	}
 
 	// init server store backend
 	if server.store, err = newStoreBackend(cfg.Store, cfg.Node.DataDir); err != nil {
