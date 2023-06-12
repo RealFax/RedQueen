@@ -37,7 +37,6 @@ token = "red-queen-cluster"
 # logger options
 # zap, internal
 logger = ""
-output-dir = "/tmp/red_queen/logs"
 debug = false
 
 [misc]
