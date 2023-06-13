@@ -29,4 +29,6 @@ RedQueen internal implements a mutex and provides grpc interface calls
 - hashicorp raft [(MPL License 2.0)](https://github.com/hashicorp/raft/blob/main/LICENSE)
 - boltdb [(MIT License)](https://github.com/boltdb/bolt/blob/master/LICENSE)
 - BurntSushi toml (MIT License)
-- vmihailenco msgpack [(BSD-2-Clause license)](https://github.com/vmihailenco/msgpack/blob/v5/LICENSE)
+- google uuid [(BSD-3-Clause License)](https://github.com/google/uuid/blob/master/LICENSE)
+- grpc [(Apache License 2.0)](https://github.com/grpc/grpc-go/blob/master/LICENSE)
+- protobuf [(BSD-3-Clause License)](https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE)
