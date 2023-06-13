@@ -9,7 +9,6 @@ require (
 	github.com/hashicorp/raft-boltdb/v2 v2.2.2
 	github.com/nutsdb/nutsdb v0.12.0
 	github.com/pkg/errors v0.9.1
-	github.com/vmihailenco/msgpack/v5 v5.3.5
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -26,7 +25,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xujiajun/mmap-go v1.0.1 // indirect
 	github.com/xujiajun/utils v0.0.0-20220904132955-5f7c5b914235 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
