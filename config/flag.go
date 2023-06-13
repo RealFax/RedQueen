@@ -22,8 +22,61 @@ Usage of RedQueen(server):
 `
 )
 
-// -- uint32 value --
+var (
+	errParse = errors.New("parse error")
+)
 
+// -- bool Value
+type boolValue bool
+
+func newBoolValue(val bool, p *bool) *boolValue {
+	*p = val
+	return (*boolValue)(p)
+}
+
+func (b *boolValue) Set(s string) error {
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		err = errParse
+	}
+	*b = boolValue(v)
+	return err
+}
+
+func (b *boolValue) String() string { return strconv.FormatBool(bool(*b)) }
+
+// -- string Value
+type stringValue string
+
+func newStringValue(val string, p *string) *stringValue {
+	*p = val
+	return (*stringValue)(p)
+}
+
+func (s *stringValue) Set(val string) error {
+	*s = stringValue(val)
+	return nil
+}
+
+func (s *stringValue) String() string { return string(*s) }
+
+// -- int64 Value
+type int64Value int64
+
+func newInt64Value(val int64, p *int64) *int64Value {
+	*p = val
+	return (*int64Value)(p)
+}
+
+func (i *int64Value) Set(s string) error {
+	v, err := strconv.ParseInt(s, 0, 64)
+	*i = int64Value(v)
+	return err
+}
+
+func (i *int64Value) String() string { return strconv.FormatInt(int64(*i), 10) }
+
+// -- uint32 value --
 type uin32Value uint32
 
 func newUInt32Value(val uint32, p *uint32) *uin32Value {

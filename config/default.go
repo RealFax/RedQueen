@@ -1,5 +1,7 @@
 package config
 
+const DefaultConfigPath string = "./config.toml"
+
 // -- node default value
 
 const (
@@ -14,10 +16,9 @@ const (
 const (
 	DefaultStoreBackend string = string(StoreBackendNuts)
 
-	DefaultStoreNutsNodeNum    int64  = 1
-	DefaultStoreNutsSync       bool   = false
-	DefaultStoreNutsStrictMode bool   = false
-	DefaultStoreNutsDataDir    string = "./data/nuts"
+	DefaultStoreNutsNodeNum    int64 = 1
+	DefaultStoreNutsSync       bool  = false
+	DefaultStoreNutsStrictMode bool  = false
 )
 
 // -- cluster default value
@@ -29,6 +30,5 @@ const (
 // -- log default value
 
 const (
-	DefaultLogLogger    string = string(LogLoggerZap)
-	DefaultLogOutputDir string = "./data/logs"
+	DefaultLogLogger string = string(LogLoggerZap)
 )

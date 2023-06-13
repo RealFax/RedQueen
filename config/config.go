@@ -58,23 +58,10 @@ type Cluster struct {
 	Bootstrap []ClusterBootstrap `toml:"bootstrap"`
 }
 
-type Security struct {
-	EnableTLS     bool `toml:"enable-tls"`
-	EnablePeerTLS bool `toml:"enable-peer-tls"`
-	AutoTLS       bool `toml:"auto-tls"`
-	PeerAutoTLS   bool `toml:"peer-auto-tls"`
-
-	TLSCert     string `toml:"tls-cert"`
-	TLSKey      string `toml:"tls-key"`
-	PeerTLSCert string `toml:"peer-tls-cert"`
-	PeerTLSKey  string `toml:"peer-tls-key"`
-}
-
 type Log struct {
 	Debug bool `toml:"debug"`
 	// Logger enum: zap, internal
-	Logger    EnumLogLogger `toml:"logger"`
-	OutputDir string        `toml:"output-dir"`
+	Logger EnumLogLogger `toml:"logger"`
 }
 
 type Misc struct {
@@ -87,13 +74,12 @@ type Auth struct {
 
 type Config struct {
 	env
-	Node     `toml:"node"`
-	Store    `toml:"store"`
-	Cluster  `toml:"cluster"`
-	Security `toml:"security"`
-	Log      `toml:"log"`
-	Misc     `toml:"misc"`
-	Auth     `toml:"auth"`
+	Node    `toml:"node"`
+	Store   `toml:"store"`
+	Cluster `toml:"cluster"`
+	Log     `toml:"log"`
+	Misc    `toml:"misc"`
+	Auth    `toml:"auth"`
 }
 
 func (c *Config) setupEnv() {
@@ -145,19 +131,8 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	// in cli: node-1@peer_addr,node-2@peer_addr
 	fs.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
 
-	// main config::security
-	fs.BoolVar(&cfg.Security.EnableTLS, "enable-tls", false, "")
-	fs.BoolVar(&cfg.Security.AutoTLS, "auto-tls", false, "")
-	fs.BoolVar(&cfg.Security.EnablePeerTLS, "enable-peer-tls", false, "")
-	fs.BoolVar(&cfg.Security.PeerAutoTLS, "peer-auto-tls", false, "")
-	fs.StringVar(&cfg.Security.TLSCert, "tls-cert", "", "")
-	fs.StringVar(&cfg.Security.TLSKey, "tls-key", "", "")
-	fs.StringVar(&cfg.Security.PeerTLSCert, "peer-tls-cert", "", "")
-	fs.StringVar(&cfg.Security.PeerTLSKey, "peer-tls-key", "", "")
-
 	// main config::log
 	fs.Var(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "logger", "")
-	fs.StringVar(&cfg.Log.OutputDir, "log-dir", DefaultLogOutputDir, "")
 	fs.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
 
 	// main config::misc
@@ -167,6 +142,41 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Auth.Token, "auth-token", "", "")
 
 	return fs.Parse(args)
+}
+
+func bindServerFromEnv(cfg *Config) {
+	EnvStringVar(&cfg.env.configFile, "RQ_CONFIG_FILE", "")
+
+	// main config::node
+	EnvStringVar(&cfg.Node.ID, "RQ_NODE_ID", "")
+	EnvStringVar(&cfg.Node.DataDir, "RQ_DATA_DIR", DefaultNodeDataDir)
+	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
+	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_CLIENT_ADDR", DefaultNodeListenClientAddr)
+	BindEnvVar(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "RQ_MAX_SNAPSHOTS")
+
+	// main config::store
+	BindEnvVar(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "RQ_STORE_BACKEND")
+
+	// main config::store::nuts
+	EnvInt64Var(&cfg.Store.Nuts.NodeNum, "RQ_NUTS_NODE_NUM", DefaultStoreNutsNodeNum)
+	EnvBoolVar(&cfg.Store.Nuts.Sync, "RQ_NUTS_SYNC", DefaultStoreNutsSync)
+	EnvBoolVar(&cfg.Store.Nuts.StrictMode, "RQ_NUTS_STRICT_MODE", DefaultStoreNutsStrictMode)
+
+	// main config::cluster
+	BindEnvVar(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "RQ_CLUSTER_STATE")
+	EnvStringVar(&cfg.Cluster.Token, "RQ_CLUSTER_TOKEN", "")
+
+	// main config::cluster::bootstrap(s)
+	BindEnvVar(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "RQ_CLUSTER_BOOTSTRAP")
+
+	// main config::log
+	BindEnvVar(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "RQ_LOGGER")
+
+	// main config::misc
+	EnvBoolVar(&cfg.Misc.PPROF, "RQ_DEBUG_PPROF", false)
+
+	// main config::auth
+	EnvStringVar(&cfg.Auth.Token, "RQ_AUTH_TOKEN", "")
 }
 
 func bindFromConfigFile(cfg *Config, path string) error {
@@ -213,11 +223,44 @@ func ReadFromArgs(args ...string) (*Config, error) {
 
 func ReadFromPath(path string) (*Config, error) {
 	cfg := newConfigEntity()
-
 	defer cfg.setupEnv()
-
 	if err := bindFromConfigFile(cfg, path); err != nil {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func ReadFromEnv() *Config {
+	cfg := newConfigEntity()
+	defer cfg.setupEnv()
+	bindServerFromEnv(cfg)
+	return cfg
+}
+
+func New(args ...string) (cfg *Config, err error) {
+	configPath := DefaultConfigPath
+
+	cfg = ReadFromEnv()
+	if cfg.Node.ID != "" {
+		if cfg.env.configFile != "" {
+			configPath = cfg.env.configFile
+			goto HandleConfigFile
+		}
+		return
+	}
+
+	if cfg, err = ReadFromArgs(args...); err != nil {
+		return
+	}
+	if cfg.Node.ID != "" {
+		if cfg.env.configFile != "" {
+			configPath = cfg.env.configFile
+			goto HandleConfigFile
+		}
+		return
+	}
+
+HandleConfigFile:
+	cfg, err = ReadFromPath(configPath)
+	return
 }

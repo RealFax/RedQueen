@@ -33,22 +33,10 @@ state = "new"
 
 token = "red-queen-cluster"
 
-[security]
-enable-tls = false
-tls-cert = ""
-tls-key = ""
-auto-tls = false
-
-enable-peer-tls = false
-peer-tls-cert = ""
-peer-tls-key = ""
-peer-auto-tls = false
-
 [log]
 # logger options
 # zap, internal
 logger = ""
-output-dir = "/tmp/red_queen/logs"
 debug = false
 
 [misc]
