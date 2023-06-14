@@ -165,10 +165,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	if server.raft, err = NewRaftWithOptions(); err != nil {
-		return nil, err
-	}
-
 	// init distributed lock backend
 	server.lockerBackend = NewLockerBackend(server.store, server.applyLog)
 
