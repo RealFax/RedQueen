@@ -34,7 +34,10 @@ type clientConn struct {
 
 func (c *clientConn) swapLeaderConn(new string) error {
 	c.mu.Lock()
-	c.readOnly[c.writeOnly.Target()] = c.writeOnly
+
+	if c.writeOnly != nil {
+		c.readOnly[c.writeOnly.Target()] = c.writeOnly
+	}
 
 	nextConn, ok := c.readOnly[new]
 	if !ok {
