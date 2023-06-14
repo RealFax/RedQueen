@@ -124,10 +124,14 @@ func NewRaftWithOptions(opts ...RaftServerOption) (*Raft, error) {
 		}
 	}
 
+	if r.Raft, err = raft.NewRaft(r.cfg, r.fsm, r.logStore, r.stableStore, r.snapshotStore, r.transport); err != nil {
+		return nil, err
+	}
+
 	if r.bootstrap {
 		if fErr := r.BootstrapCluster(raft.Configuration{
 			Servers: r.clusters,
-		}); fErr != nil {
+		}); fErr.Error() != nil {
 			return nil, fErr.Error()
 		}
 	}
