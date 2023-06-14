@@ -19,6 +19,16 @@ func newNutsStore(cfg config.Store, dir string) (store.Store, error) {
 		NodeNum: cfg.Nuts.NodeNum,
 		Sync:    cfg.Nuts.Sync,
 		DataDir: filepath.Join(dir, StoreSuffix),
+		RWMode: func() nuts.RWMode {
+			switch cfg.Nuts.RWMode {
+			case config.NutsRWModeFileIO:
+				return nuts.FileIO
+			case config.NutsRWModeMMap:
+				return nuts.MMap
+			default:
+				return nuts.FileIO
+			}
+		}(),
 	})
 }
 

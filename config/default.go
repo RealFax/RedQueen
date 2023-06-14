@@ -16,9 +16,10 @@ const (
 const (
 	DefaultStoreBackend string = string(StoreBackendNuts)
 
-	DefaultStoreNutsNodeNum    int64 = 1
-	DefaultStoreNutsSync       bool  = false
-	DefaultStoreNutsStrictMode bool  = false
+	DefaultStoreNutsNodeNum    int64  = 1
+	DefaultStoreNutsSync       bool   = false
+	DefaultStoreNutsStrictMode bool   = false
+	DefaultStoreNutsRWMode     string = "fileio"
 )
 
 // -- cluster default value
