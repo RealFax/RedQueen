@@ -23,6 +23,7 @@ func init() {
 		NodeNum: 1,
 		Sync:    false,
 		DataDir: "/tmp/nuts-db",
+		RWMode:  nuts.MMap,
 	}); err != nil {
 		panic(err)
 	}

@@ -24,6 +24,22 @@ func (b EnumStoreBackend) Valid() error {
 	}
 }
 
+type EnumNutsRWMode string
+
+const (
+	NutsRWModeFileIO EnumNutsRWMode = "fileio"
+	NutsRWModeMMap   EnumNutsRWMode = "mmap"
+)
+
+func (m EnumNutsRWMode) Valid() error {
+	switch m {
+	case NutsRWModeFileIO, NutsRWModeMMap:
+		return nil
+	default:
+		return errors.New("unknown nuts rw mode")
+	}
+}
+
 type EnumClusterState string
 
 const (
@@ -67,5 +83,5 @@ func (p FilePath) Valid() error {
 }
 
 type stringValidator interface {
-	EnumStoreBackend | EnumClusterState | EnumLogLogger | FilePath
+	EnumStoreBackend | EnumNutsRWMode | EnumClusterState | EnumLogLogger | FilePath
 }
