@@ -1,0 +1,92 @@
+name: build-docker
+
+on:
+  release:
+    types:
+      - created
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-oci-image:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+      # debug
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event from ${{ github.actor }}."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      - name: Check out repository code
+        uses: actions/checkout@master
+
+      # debug
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+
+      # debug github context and env
+      - name: Dump env
+        run: env | sort
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Making RedQueen docker image
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o ./release/rqd ./_bin/RedQueenServer
+          GOOS=linux GOARCH=amd64 go build -o ./release/rqctl ./_bin/RedQueenUtil
+          cp ./Dockerfile ./release/Dockerfile
+
+      # docker hub credentials
+      - name: login to docker hub
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ secrets.DOCKER_TOKEN }}
+
+      # GitHub container registry credentials
+      - name: Log in to the Github Container registry ${{ env.GH_REGISTRY }} as ${{ github.actor }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.GH_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # tags and labels
+      - name: Extract metadata (tags, labels) for image ${{ env.FULL_IMAGE_NAME }}
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.IMAGE_NAME }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      # build OCI image and push to registries (Docker Hub and GitHub Container Registry)
+      - name: build and push docker image
+        uses: docker/build-push-action@v3.2.0
+        with:
+          context: ./release
+          file: ./release/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ARCH=amd64
