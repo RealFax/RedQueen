@@ -20,6 +20,17 @@ var (
 	ErrStateBreak = errors.New("state break")
 )
 
+// RWMode represents the read and write mode.
+type RWMode = nutsdb.RWMode
+
+const (
+	// FileIO represents the read and write mode using standard I/O.
+	FileIO = nutsdb.FileIO
+
+	// MMap represents the read and write mode using mmap.
+	MMap = nutsdb.MMap
+)
+
 var strictMode atomic.Bool
 
 func EnableStrictMode()  { strictMode.Store(true) }
@@ -31,9 +42,9 @@ func init() {
 
 type Config struct {
 	NodeNum int64
-	// SegmentSize int64
 	Sync    bool
 	DataDir string
+	RWMode  RWMode
 }
 
 type storeAPI struct {
@@ -58,7 +69,8 @@ func New(cfg Config) (store.Store, error) {
 		nutsdb.WithDir(cfg.DataDir),
 		nutsdb.WithSyncEnable(cfg.Sync),
 		nutsdb.WithNodeNum(cfg.NodeNum),
-		// nutsdb.WithSegmentSize(cfg.SegmentSize),
+		nutsdb.WithRWMode(cfg.RWMode),
+		// nutsdb.WithSegmentSize(128 * nutsdb.MB),
 	}
 	db, err := nutsdb.Open(nutsdb.DefaultOptions, opts...)
 	if err != nil {
