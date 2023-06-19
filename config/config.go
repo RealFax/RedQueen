@@ -36,14 +36,15 @@ type Node struct {
 }
 
 type StoreNuts struct {
-	NodeNum    int64 `toml:"node-num"`
-	Sync       bool  `toml:"sync"`
-	StrictMode bool  `toml:"strict-mode"`
+	NodeNum    int64          `toml:"node-num"`
+	Sync       bool           `toml:"sync"`
+	StrictMode bool           `toml:"strict-mode"`
+	RWMode     EnumNutsRWMode `toml:"rw-mode"`
 }
 
 type Store struct {
-	Backend EnumStoreBackend
-	Nuts    StoreNuts
+	Backend EnumStoreBackend `toml:"backend"`
+	Nuts    StoreNuts        `toml:"nuts"`
 }
 
 type ClusterBootstrap struct {
@@ -119,9 +120,10 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
 	// main config::store::nuts
-	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "nth node in the system")
+	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "node-id in the system")
 	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "enable sync write")
 	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "enable strict mode")
+	fs.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
 
 	// main config::cluster
 	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "status of the cluster at startup")
@@ -161,6 +163,7 @@ func bindServerFromEnv(cfg *Config) {
 	EnvInt64Var(&cfg.Store.Nuts.NodeNum, "RQ_NUTS_NODE_NUM", DefaultStoreNutsNodeNum)
 	EnvBoolVar(&cfg.Store.Nuts.Sync, "RQ_NUTS_SYNC", DefaultStoreNutsSync)
 	EnvBoolVar(&cfg.Store.Nuts.StrictMode, "RQ_NUTS_STRICT_MODE", DefaultStoreNutsStrictMode)
+	BindEnvVar(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "RQ_NUTS_RW_MODE")
 
 	// main config::cluster
 	BindEnvVar(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "RQ_CLUSTER_STATE")
