@@ -11,12 +11,12 @@ import (
 )
 
 func main() {
-	cfg, err := config.ReadFromArgs(os.Args...)
+	cfg, err := config.New(os.Args...)
 	if err != nil {
 		fmt.Println("[-] parse config failed, ", err)
 		return
 	}
-
+	fmt.Println("addr:", cfg.Node.ListenPeerAddr, ", ", cfg.Node.ListenClientAddr)
 	server, err := red.NewServer(cfg)
 	if err != nil {
 		fmt.Println("[-] init server failed, ", err)

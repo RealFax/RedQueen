@@ -7,6 +7,6 @@ ADD rqctl /usr/local/bin
 WORKDIR /var/rqd/
 WORKDIR /var/lib/rqd/
 
-EXPOSE 2539 2540
+EXPOSE 5290 5230
 
 CMD ["/usr/local/bin/rqd"]
