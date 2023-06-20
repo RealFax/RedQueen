@@ -152,7 +152,7 @@ func bindServerFromEnv(cfg *Config) {
 	// main config::node
 	EnvStringVar(&cfg.Node.ID, "RQ_NODE_ID", "")
 	EnvStringVar(&cfg.Node.DataDir, "RQ_DATA_DIR", DefaultNodeDataDir)
-	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
+	EnvStringVar(&cfg.Node.ListenPeerAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
 	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_CLIENT_ADDR", DefaultNodeListenClientAddr)
 	BindEnvVar(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "RQ_MAX_SNAPSHOTS")
 
