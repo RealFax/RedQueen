@@ -1,0 +1,5 @@
+optional coalescing of raft apply log request for enhanced performance
+
+waiting for a time slice, and when it is about to enter the next time slice, merge all requests in this time slice. Or when the count of requests in a time slice reaches the maximum threshold that can be set, all requests are merged.
+
+issues#33 - https://github.com/RealFax/RedQueen/issues/33
