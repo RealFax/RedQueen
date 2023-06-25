@@ -1,9 +1,11 @@
 package red
 
 import (
+	"bytes"
 	"context"
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/config"
+	"github.com/RealFax/RedQueen/internal/syncx"
 	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/hashicorp/raft"
@@ -13,6 +15,14 @@ import (
 	"net"
 	"sync"
 	"time"
+)
+
+var (
+	bufferPool = syncx.NewPool[*bytes.Buffer](
+		func() *bytes.Buffer { return &bytes.Buffer{} },
+		nil,
+		func(val *bytes.Buffer) { val.Reset() },
+	)
 )
 
 type Server struct {
@@ -76,13 +86,6 @@ func (s *Server) _stateUpdater() {
 		select {
 		case state := <-s.raft.LeaderCh():
 			s.stateNotify.Range(func(_, val any) bool {
-				//ch, ok := val.(chan bool)
-				//if !ok {
-				//	return true
-				//}
-				//if len(ch) == cap(ch) {
-				//	return true
-				//}
 				val.(chan bool) <- state
 				return true
 			})
