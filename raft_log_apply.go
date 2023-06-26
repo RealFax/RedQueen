@@ -83,12 +83,8 @@ type raftMultipleLogApply struct {
 
 func (a *raftMultipleLogApply) reset() {
 	a.rwm.Lock()
-	a.onMerge = make(chan struct{})
 	atomic.StoreInt32(&a.counter, 0)
-	a.filter.DisorderedRange(func(key uint64, _ *multipleLogApplyTracker) bool {
-		a.filter.Delete(key)
-		return true
-	})
+	a.filter.Reset()
 	a.rwm.Unlock()
 }
 
@@ -116,26 +112,30 @@ func (a *raftMultipleLogApply) merge() {
 
 	putLogPackHeader(buf.Val(), MultipleLogPack)
 	w.Encode(buf.Val())
-	err := a.applyFunc(buf.Val().Bytes(), a.applyTimeout).Error()
+
+	// apply log to followers
+	resp := a.applyFunc(buf.Val().Bytes(), a.applyTimeout)
+	if resp == nil {
+		return
+	}
+
 	for _, causeFunc := range notify {
-		causeFunc(err)
+		causeFunc(resp.Error())
 	}
 }
 
 func (a *raftMultipleLogApply) runMerge() {
-	a.rwm.Lock()
-	close(a.onMerge)
-	a.rwm.Unlock()
+	a.onMerge <- struct{}{}
 }
 
-func (a *raftMultipleLogApply) onFullTrigger() {
-	if atomic.LoadInt32(&a.counter) != atomic.LoadInt32(&a.maxLimit) {
+func (a *raftMultipleLogApply) fullCounter() {
+	if atomic.LoadInt32(&a.counter)+1 != atomic.LoadInt32(&a.maxLimit) {
 		return
 	}
 	a.runMerge()
 }
 
-func (a *raftMultipleLogApply) listenDeadline() {
+func (a *raftMultipleLogApply) listen() {
 	ticker := time.NewTicker(a.deadline)
 	defer ticker.Stop()
 	for {
@@ -144,16 +144,10 @@ func (a *raftMultipleLogApply) listenDeadline() {
 			return
 		case <-ticker.C:
 			a.runMerge()
-		}
-	}
-}
-
-func (a *raftMultipleLogApply) listenOnMerge() {
-	for {
-		select {
-		case <-a.ctx.Done():
-			return
 		case <-a.onMerge:
+			if atomic.LoadInt32(&a.counter) == 0 {
+				continue
+			}
 			go a.merge()
 		}
 	}
@@ -183,7 +177,7 @@ func (a *raftMultipleLogApply) Apply(ctx *context.Context, m *serverpb.RaftLogPa
 		return errors.Wrap(err, "marshal raft log error")
 	}
 
-	a.onFullTrigger()
+	a.fullCounter()
 	return nil
 }
 
@@ -194,13 +188,12 @@ func NewRaftMultipleLogApply(ctx context.Context, maxLimit int32, deadline, appl
 		applyTimeout: applyTimeout,
 		ctx:          ctx,
 		applyFunc:    af,
-		onMerge:      make(chan struct{}),
+		onMerge:      make(chan struct{}, 1),
 		rwm:          sync.RWMutex{},
 		filter:       *orderMap.New[uint64, *multipleLogApplyTracker](),
 	}
 
-	go m.listenDeadline()
-	go m.listenOnMerge()
+	go m.listen()
 
 	return m
 }

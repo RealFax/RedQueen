@@ -1,6 +1,8 @@
 package collapsar
 
-import "io"
+import (
+	"io"
+)
 
 type Writer interface {
 	Encode(w io.Writer) error
