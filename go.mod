@@ -4,6 +4,8 @@ go 1.20
 
 require (
 	github.com/BurntSushi/toml v1.2.1
+	github.com/RealFax/order-map v0.1.5
+	github.com/cespare/xxhash v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/raft v1.5.0
 	github.com/hashicorp/raft-boltdb/v2 v2.2.2
