@@ -157,6 +157,10 @@ func (a *raftMultipleLogApply) Apply(ctx *context.Context, m *serverpb.RaftLogPa
 	c, cancelCause := context.WithCancelCause(*ctx)
 	*ctx = c
 	tracker := &multipleLogApplyTracker{ctx: c, cancelCause: cancelCause, m: m}
+	// preprocessing proto message
+	if tracker.em, err = proto.Marshal(m); err != nil {
+		return errors.Wrap(err, "marshal raft log error")
+	}
 
 	key := RaftLogPayloadKey(m)
 
@@ -171,11 +175,6 @@ func (a *raftMultipleLogApply) Apply(ctx *context.Context, m *serverpb.RaftLogPa
 	}
 	a.filter.Store(key, tracker)
 	a.rwm.RUnlock()
-
-	// preprocessing proto message
-	if tracker.em, err = proto.Marshal(m); err != nil {
-		return errors.Wrap(err, "marshal raft log error")
-	}
 
 	a.fullCounter()
 	return nil
