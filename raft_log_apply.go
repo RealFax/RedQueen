@@ -52,7 +52,7 @@ type raftSingleLogApply struct {
 func (a *raftSingleLogApply) Apply(_ *context.Context, m *serverpb.RaftLogPayload, timeout time.Duration) error {
 	buf := bufferPool.Alloc()
 	defer buf.Free()
-	if err := NewSingleLogPack(buf.Val(), m); err != nil {
+	if err := PackSingleLog(buf.Val(), m); err != nil {
 		return err
 	}
 	return a.ApplyFunc(buf.Val().Bytes(), timeout).Error()
