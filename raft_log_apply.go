@@ -50,12 +50,13 @@ type raftSingleLogApply struct {
 }
 
 func (a *raftSingleLogApply) Apply(_ *context.Context, m *serverpb.RaftLogPayload, timeout time.Duration) error {
-	buf := bufferPool.Alloc()
-	defer buf.Free()
-	if err := PackSingleLog(buf.Val(), m); err != nil {
-		return err
+	b := LogPackHeader(SingleLogPack)
+	cmd, err := proto.Marshal(m)
+	if err != nil {
+		return errors.Wrap(err, "marshal raft log error")
 	}
-	return a.ApplyFunc(buf.Val().Bytes(), timeout).Error()
+	b = append(b, cmd...)
+	return a.ApplyFunc(b, timeout).Error()
 }
 
 func NewRaftSingeLogApply(af ApplyFunc) RaftApply {
@@ -110,7 +111,7 @@ func (a *raftMultipleLogApply) merge() {
 	buf := bufferPool.Alloc()
 	defer buf.Free()
 
-	putLogPackHeader(buf.Val(), MultipleLogPack)
+	buf.Val().Write(LogPackHeader(MultipleLogPack))
 	w.Encode(buf.Val())
 
 	// apply log to followers

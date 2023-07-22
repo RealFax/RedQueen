@@ -25,7 +25,7 @@ func init() {
 }
 
 func TestRaftLogPayloadKey(t *testing.T) {
-	red.RaftLogPayloadKey(raftLogPayloadMessage)
+	t.Logf("Payload key: %d", red.RaftLogPayloadKey(raftLogPayloadMessage))
 }
 
 func TestRaftMultipleLogApply_Apply(t *testing.T) {
