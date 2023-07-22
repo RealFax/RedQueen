@@ -14,30 +14,20 @@ const (
 	MultipleLogPack
 )
 
-func putLogPackHeader(w io.Writer, typ uint32) {
+func LogPackHeader(typ uint32) []byte {
 	p := make([]byte, 4)
 	binary.LittleEndian.PutUint32(p, typ)
-	w.Write(p)
+	return p
 }
 
-func getLogPackHeader(r io.Reader) uint32 {
+func GetLogPackHeader(r io.Reader) uint32 {
 	p := make([]byte, 4)
 	r.Read(p)
 	return binary.LittleEndian.Uint32(p)
 }
 
-func PackSingleLog(w io.Writer, m *serverpb.RaftLogPayload) error {
-	putLogPackHeader(w, SingleLogPack)
-	cmd, err := proto.Marshal(m)
-	if err != nil {
-		return errors.Wrap(err, "marshal raft log error")
-	}
-	w.Write(cmd)
-	return nil
-}
-
 func UnpackSingleLog(r io.Reader) (*serverpb.RaftLogPayload, error) {
-	if getLogPackHeader(r) != SingleLogPack {
+	if GetLogPackHeader(r) != SingleLogPack {
 		return nil, errors.New("invalid single log header")
 	}
 	b, err := io.ReadAll(r)
@@ -52,7 +42,7 @@ func UnpackSingleLog(r io.Reader) (*serverpb.RaftLogPayload, error) {
 }
 
 func UnpackMultipleLog(r io.Reader) ([]*serverpb.RaftLogPayload, error) {
-	if getLogPackHeader(r) != MultipleLogPack {
+	if GetLogPackHeader(r) != MultipleLogPack {
 		return nil, errors.New("invalid multiple log header")
 	}
 	cr, err := collapsar.NewReader(r)
@@ -75,5 +65,24 @@ func UnpackMultipleLog(r io.Reader) ([]*serverpb.RaftLogPayload, error) {
 			return nil, errors.Wrap(err, "unmarshal raft log error")
 		}
 		logs = append(logs, m)
+	}
+}
+
+func UnpackLog(r io.Reader) ([]*serverpb.RaftLogPayload, error) {
+	switch GetLogPackHeader(r) {
+	case SingleLogPack:
+		m, err := UnpackSingleLog(r)
+		if err != nil {
+			return nil, err
+		}
+		return []*serverpb.RaftLogPayload{m}, nil
+	case MultipleLogPack:
+		logs, err := UnpackMultipleLog(r)
+		if err != nil {
+			return nil, err
+		}
+		return logs, nil
+	default:
+		return nil, errors.New("auto unmarshal raft log error, no method")
 	}
 }
