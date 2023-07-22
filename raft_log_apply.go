@@ -1,6 +1,7 @@
 package red
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"github.com/RealFax/RedQueen/api/serverpb"
@@ -21,20 +22,21 @@ var (
 )
 
 func RaftLogPayloadKey(m *serverpb.RaftLogPayload) uint64 {
-	buf := bufferPool.Alloc()
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer buf.Reset()
 
 	p := make([]byte, 4)
 	binary.LittleEndian.PutUint32(p, uint32(m.Command))
-	buf.Val().Write(p)
+	buf.Write(p)
 
-	buf.Val().Write(m.Key)
+	buf.Write(m.Key)
 	if m.Namespace != nil {
-		buf.Val().WriteString(*m.Namespace)
+		buf.WriteString(*m.Namespace)
 	}
 
 	x := xxhash.New()
-	io.Copy(x, buf.Val())
-	buf.Free()
+	io.Copy(x, buf)
+	bufferPool.Put(buf)
 
 	return x.Sum64()
 }
@@ -108,14 +110,15 @@ func (a *raftMultipleLogApply) merge() {
 	// reset state with start recv apply request
 	a.reset()
 
-	buf := bufferPool.Alloc()
-	defer buf.Free()
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(buf)
+	defer buf.Reset()
 
-	buf.Val().Write(LogPackHeader(MultipleLogPack))
-	w.Encode(buf.Val())
+	buf.Write(LogPackHeader(MultipleLogPack))
+	w.Encode(buf)
 
 	// apply log to followers
-	resp := a.applyFunc(buf.Val().Bytes(), a.applyTimeout)
+	resp := a.applyFunc(buf.Bytes(), a.applyTimeout)
 	if resp == nil {
 		return
 	}
