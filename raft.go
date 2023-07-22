@@ -64,7 +64,7 @@ func RaftWithConfig(cfg *raft.Config) RaftServerOption {
 
 func RaftWithStdFSM(store store.Store) RaftServerOption {
 	return func(r *Raft) error {
-		r.fsm = NewFSM(store)
+		r.fsm = NewFSM(store, NewFSMHandlers(store))
 		return nil
 	}
 }
