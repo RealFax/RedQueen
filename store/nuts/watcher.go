@@ -5,7 +5,9 @@ import (
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/utils"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -19,6 +21,7 @@ func (m *WatcherMetadata) String() string {
 }
 
 type WatcherNotify struct {
+	state         atomic.Bool
 	unwatchedFunc func()
 	Values        chan *store.WatchValue
 	UUID          string
@@ -29,6 +32,10 @@ func (n *WatcherNotify) Notify() chan *store.WatchValue {
 }
 
 func (n *WatcherNotify) Close() error {
+	if !n.state.Load() {
+		return errors.New("watcher notify has closed")
+	}
+	n.state.Store(false)
 	n.unwatchedFunc()
 	close(n.Values)
 	return nil
@@ -42,7 +49,7 @@ type WatcherChannel struct {
 	Notify     sync.Map // map[string]*WatcherNotify
 }
 
-func (c *WatcherChannel) Get() map[string]int {
+func (c *WatcherChannel) Metadata() map[string]int {
 	m := make(map[string]int)
 	c.Notify.Range(func(key, value any) bool {
 		m[key.(string)] = len(value.(*WatcherNotify).Values)
@@ -52,14 +59,10 @@ func (c *WatcherChannel) Get() map[string]int {
 }
 
 func (c *WatcherChannel) AddNotify(dest *WatcherNotify) {
+	dest.state = atomic.Bool{}
+	dest.state.Store(true)
 	dest.unwatchedFunc = func() {
-		c.Notify.Range(func(key, _ any) bool {
-			if key.(string) == dest.UUID {
-				c.Notify.Delete(key)
-				return false
-			}
-			return true
-		})
+		c.Notify.Delete(dest.UUID)
 	}
 	c.Notify.Store(dest.UUID, dest)
 }
@@ -99,10 +102,10 @@ type WatcherChild struct {
 	Channels  sync.Map // map[uint64]*WatcherChannel
 }
 
-func (c *WatcherChild) Get() map[uint64]map[string]int {
+func (c *WatcherChild) Metadata() map[uint64]map[string]int {
 	m := make(map[uint64]map[string]int)
 	c.Channels.Range(func(key, value any) bool {
-		m[key.(uint64)] = value.(*WatcherChannel).Get()
+		m[key.(uint64)] = value.(*WatcherChannel).Metadata()
 		return true
 	})
 	return m
@@ -131,30 +134,27 @@ func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
 }
 
 func (c *WatcherChild) Update(key, value []byte) {
-	watchKey := WatchKey(key)
+	channel, ok := c.Channels.Load(WatchKey(key))
+	if !ok {
+		return
+	}
 
 	var valuePtr *[]byte
 	if value != nil {
 		valuePtr = &value
 	}
 
-	c.Channels.Range(func(key, channel any) bool {
-		if watchKey == key {
-			channel.(*WatcherChannel).UpdateValue(valuePtr)
-			return false
-		}
-		return true
-	})
+	channel.(*WatcherChannel).UpdateValue(valuePtr)
 }
 
 type Watcher struct {
 	Namespaces sync.Map // map[string]*WatcherChild
 }
 
-func (w *Watcher) Get() *WatcherMetadata {
+func (w *Watcher) Metadata() *WatcherMetadata {
 	m := make(map[string]map[uint64]map[string]int)
 	w.Namespaces.Range(func(key, value any) bool {
-		m[key.(string)] = value.(*WatcherChild).Get()
+		m[key.(string)] = value.(*WatcherChild).Metadata()
 		return true
 	})
 	return (*WatcherMetadata)(&m)

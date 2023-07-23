@@ -49,7 +49,7 @@ func TestWatcher(t *testing.T) {
 		time.Sleep(time.Millisecond * 300)
 	}
 
-	out, _ := json.MarshalIndent(watcher.Get(), "", "\t")
+	out, _ := json.MarshalIndent(watcher.Metadata(), "", "\t")
 	t.Logf("\n%s", out)
 	cancel()
 
