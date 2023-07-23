@@ -179,7 +179,7 @@ func (s *storeAPI) GetNamespace() string {
 }
 
 func (s *storeAPI) GetWatch() store.WatcherMetadata {
-	return s.watcher.Get()
+	return s.watcher.Metadata()
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
