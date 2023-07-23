@@ -34,7 +34,13 @@ func TestWatcher(t *testing.T) {
 			for {
 				select {
 				case val := <-notify.Values:
-					t.Logf("ClientID: %d, Seq: %d, Timestamp: %d, Data: %s", clientID, val.Seq, val.Timestamp, *val.Data)
+					t.Logf("ClientID: %d, Seq: %d, Timestamp: %d, TTL: %d, Data: %s",
+						clientID,
+						val.Seq,
+						val.Timestamp,
+						val.TTL,
+						*val.Data,
+					)
 				case <-ctx.Done():
 					notify.Close()
 					t.Logf("Stop recv, ClientID: %d", clientID)
@@ -45,7 +51,7 @@ func TestWatcher(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		child.Update(keys[0], []byte("VALUE_"+strconv.Itoa(i)))
+		child.Update(keys[0], []byte("VALUE_"+strconv.Itoa(i)), 60)
 		time.Sleep(time.Millisecond * 300)
 	}
 

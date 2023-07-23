@@ -178,6 +178,7 @@ func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServe
 				Header:    s.responseHeader(),
 				UpdateSeq: value.Seq,
 				Timestamp: value.Timestamp,
+				Ttl:       value.TTL,
 				Data:      *value.Data,
 			}); err != nil {
 				// unrecoverable error

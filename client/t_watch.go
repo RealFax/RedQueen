@@ -14,6 +14,7 @@ var (
 type WatchValue struct {
 	seq       uint64
 	Timestamp int64
+	TTL       uint32
 	Data      []byte
 }
 
