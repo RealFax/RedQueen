@@ -19,6 +19,7 @@ func NewValue(data []byte) *Value {
 type WatchValue struct {
 	Seq       uint64
 	Timestamp int64
+	TTL       uint32
 	// Data can be nil pointer, if Data is nil pointer then that the Data is deleted
 	Data *[]byte
 }

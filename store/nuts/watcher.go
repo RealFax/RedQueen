@@ -67,19 +67,14 @@ func (c *WatcherChannel) AddNotify(dest *WatcherNotify) {
 	c.Notify.Store(dest.UUID, dest)
 }
 
-func (c *WatcherChannel) UpdateValue(val *[]byte) {
-	var (
-		seq       uint64
-		timestamp int64
-	)
-
+func (c *WatcherChannel) UpdateValue(val *[]byte, ttl uint32) {
 	c.mu.Lock()
 	c.Seq++
 	c.LastUpdate = time.Now().UnixMilli()
 	c.Value = val
 
-	seq = c.Seq
-	timestamp = c.LastUpdate
+	seq := c.Seq
+	timestamp := c.LastUpdate
 	c.mu.Unlock()
 
 	c.Notify.Range(func(_, value any) bool {
@@ -91,6 +86,7 @@ func (c *WatcherChannel) UpdateValue(val *[]byte) {
 		dest.Values <- &store.WatchValue{
 			Seq:       seq,
 			Timestamp: timestamp,
+			TTL:       ttl,
 			Data:      val,
 		}
 		return true
@@ -133,7 +129,7 @@ func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
 	return notify
 }
 
-func (c *WatcherChild) Update(key, value []byte) {
+func (c *WatcherChild) Update(key, value []byte, ttl uint32) {
 	channel, ok := c.Channels.Load(WatchKey(key))
 	if !ok {
 		return
@@ -144,7 +140,7 @@ func (c *WatcherChild) Update(key, value []byte) {
 		valuePtr = &value
 	}
 
-	channel.(*WatcherChannel).UpdateValue(valuePtr)
+	channel.(*WatcherChannel).UpdateValue(valuePtr, ttl)
 }
 
 type Watcher struct {

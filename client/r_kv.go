@@ -159,6 +159,7 @@ func (c *kvClient) Watch(ctx context.Context, watcher *Watcher) error {
 		watcher.ch <- &WatchValue{
 			seq:       resp.UpdateSeq,
 			Timestamp: resp.Timestamp,
+			TTL:       resp.Ttl,
 			Data:      resp.Data,
 		}
 	}
