@@ -1,13 +1,12 @@
 package red
 
 import (
+	"bytes"
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
-
 	"io"
 )
 
@@ -20,15 +19,20 @@ type FSM struct {
 func (f *FSM) Apply(log *raft.Log) any {
 	switch log.Type {
 	case raft.LogCommand:
-		var msg serverpb.RaftLogPayload
-		if err := proto.Unmarshal(log.Data, &msg); err != nil {
-			return errors.Wrap(err, "unmarshal proto error:")
+		msgs, err := UnpackLog(bytes.NewReader(log.Data))
+		if err != nil {
+			return err
 		}
-		handle, ok := f.handlers[msg.Command]
-		if !ok {
-			return errors.New("there's no corresponding command handle")
+		for _, msg := range msgs {
+			handle, ok := f.handlers[msg.Command]
+			if !ok {
+				return errors.New("there's no corresponding command handle")
+			}
+			if err = handle(msg); err != nil {
+				return err
+			}
 		}
-		return handle(&msg)
+		return nil
 	}
 	return nil
 }

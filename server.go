@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 	"net"
 	"sync"
 	"time"
@@ -30,6 +29,7 @@ type Server struct {
 
 	store         store.Store
 	lockerBackend locker.Backend
+	logApplyer    RaftApply
 
 	raft        *Raft
 	grpcServer  *grpc.Server
@@ -57,25 +57,20 @@ func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {
 	return storeAPI, nil
 }
 
-func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) (raft.ApplyFuture, error) {
-	cmd, err := proto.Marshal(p)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal raft log error")
+func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) error {
+	if err := s.logApplyer.Apply(&ctx, p, timeout); err != nil {
+		if err == ErrApplyLogTimeTravelDone || err == ErrApplyLogDone {
+			return nil
+		}
+		return err
+	}
+	// waiting response
+	<-ctx.Done()
+	if context.Cause(ctx) == ErrApplyLogDone {
+		return nil
 	}
 
-	ch := make(chan raft.ApplyFuture, 1)
-
-	go func() {
-		ch <- s.raft.Apply(cmd, timeout)
-		close(ch)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, errors.Wrap(ctx.Err(), "context")
-	case v := <-ch:
-		return v, v.Error()
-	}
+	return ctx.Err()
 }
 
 func (s *Server) _stateUpdater() {
@@ -111,7 +106,6 @@ func (s *Server) Close() (err error) {
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
-
 	var (
 		server = Server{
 			clusterID: cfg.Node.ID,
@@ -120,7 +114,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		err error
 	)
 
-	if cfg.PPROF {
+	if cfg.Misc.PPROF {
 		server.pprofServer, err = newPprofServer()
 		if err != nil {
 			return nil, errors.Wrap(err, "pprof server")
@@ -167,6 +161,19 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// init distributed lock backend
 	server.lockerBackend = NewLockerBackend(server.store, server.applyLog)
+
+	// init requests merged
+	if cfg.Node.RequestsMerged {
+		server.logApplyer = NewRaftMultipleLogApply(
+			context.Background(),
+			64,
+			time.Millisecond*300,
+			time.Second*3,
+			server.raft.Apply,
+		)
+	} else {
+		server.logApplyer = NewRaftSingeLogApply(server.raft.Apply)
+	}
 
 	// start daemon service
 	go server._stateUpdater()

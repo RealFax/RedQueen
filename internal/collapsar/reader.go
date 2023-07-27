@@ -2,7 +2,6 @@ package collapsar
 
 import (
 	"encoding/gob"
-	"fmt"
 	"io"
 	"sync/atomic"
 )
@@ -23,7 +22,6 @@ func (r *reader) Next() ([]byte, error) {
 func NewReader(r io.Reader) (Reader, error) {
 	var bin Binary
 	if err := gob.NewDecoder(r).Decode(&bin); err != nil {
-		fmt.Println(bin)
 		return nil, err
 	}
 	return &reader{

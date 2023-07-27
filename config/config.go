@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
@@ -33,6 +32,7 @@ type Node struct {
 	ListenPeerAddr   string `toml:"listen-peer-addr"`
 	ListenClientAddr string `toml:"listen-client-addr"`
 	MaxSnapshots     uint32 `toml:"max-snapshots"`
+	RequestsMerged   bool   `toml:"requests-merged"`
 }
 
 type StoreNuts struct {
@@ -115,7 +115,7 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
 	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
 	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
-
+	fs.BoolVar(&cfg.Node.RequestsMerged, "requests-merged", DefaultNodeRequestsMerged, "enable raft apply log requests merged")
 	// main config::store
 	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
@@ -155,6 +155,7 @@ func bindServerFromEnv(cfg *Config) {
 	EnvStringVar(&cfg.Node.ListenPeerAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
 	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_CLIENT_ADDR", DefaultNodeListenClientAddr)
 	BindEnvVar(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "RQ_MAX_SNAPSHOTS")
+	EnvBoolVar(&cfg.Node.RequestsMerged, "RQ_REQUESTS_MERGED", DefaultNodeRequestsMerged)
 
 	// main config::store
 	BindEnvVar(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "RQ_STORE_BACKEND")

@@ -3,7 +3,7 @@ package nuts
 import (
 	"encoding/json"
 	"github.com/RealFax/RedQueen/store"
-	"github.com/RealFax/RedQueen/utils"
+	"github.com/RealFax/RedQueen/utils/hack"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"sync"
@@ -17,7 +17,7 @@ type WatcherMetadata map[string]map[uint64]map[string]int
 
 func (m *WatcherMetadata) String() string {
 	out, _ := json.MarshalIndent(m, "", "\t")
-	return utils.Bytes2String(out)
+	return hack.Bytes2String(out)
 }
 
 type WatcherNotify struct {

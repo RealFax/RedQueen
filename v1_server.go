@@ -44,7 +44,7 @@ func (s *Server) responseHeader() *serverpb.ResponseHeader {
 }
 
 func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
 				return serverpb.RaftLogCommand_Set
@@ -115,7 +115,7 @@ func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) 
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
 				return serverpb.RaftLogCommand_TrySet
@@ -139,7 +139,7 @@ func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverp
 }
 
 func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command:   serverpb.RaftLogCommand_Del,
 		Key:       req.Key,
 		Namespace: req.Namespace,
@@ -179,7 +179,12 @@ func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServe
 				UpdateSeq: value.Seq,
 				Timestamp: value.Timestamp,
 				Ttl:       value.TTL,
-				Data:      *value.Data,
+				Data: func() []byte {
+					if value.Data == nil {
+						return nil
+					}
+					return *value.Data
+				}(),
 			}); err != nil {
 				// unrecoverable error
 				return status.Error(codes.FailedPrecondition, err.Error())
