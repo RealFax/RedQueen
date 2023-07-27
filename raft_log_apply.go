@@ -19,6 +19,7 @@ import (
 
 var (
 	ErrApplyLogTimeTravelDone = errors.New("raft apply log time-travel done")
+	ErrApplyLogDone           = errors.New("raft apply log done")
 )
 
 func RaftLogPayloadKey(m *serverpb.RaftLogPayload) uint64 {
@@ -58,7 +59,12 @@ func (a *raftSingleLogApply) Apply(_ *context.Context, m *serverpb.RaftLogPayloa
 		return errors.Wrap(err, "marshal raft log error")
 	}
 	b = append(b, cmd...)
-	return a.ApplyFunc(b, timeout).Error()
+
+	resp := a.ApplyFunc(b, timeout)
+	if resp.Error() != nil {
+		return resp.Error()
+	}
+	return ErrApplyLogDone
 }
 
 func NewRaftSingeLogApply(af ApplyFunc) RaftApply {
@@ -95,7 +101,7 @@ func (a *raftMultipleLogApply) merge() {
 	a.rwm.Lock() // stop recv apply request
 	var (
 		off    = 0
-		size   = atomic.LoadInt32(&a.counter)
+		size   = a.filter.Size()
 		w      = collapsar.NewWriter(size)
 		notify = make([]context.CancelCauseFunc, size)
 	)
@@ -118,13 +124,18 @@ func (a *raftMultipleLogApply) merge() {
 	w.Encode(buf)
 
 	// apply log to followers
-	resp := a.applyFunc(buf.Bytes(), a.applyTimeout)
-	if resp == nil {
-		return
+	var (
+		err  = ErrApplyLogDone
+		resp = a.applyFunc(buf.Bytes(), a.applyTimeout)
+	)
+
+	if resp.Error() != nil {
+		err = resp.Error()
 	}
 
+	// response
 	for _, causeFunc := range notify {
-		causeFunc(resp.Error())
+		causeFunc(err)
 	}
 }
 
