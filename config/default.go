@@ -9,6 +9,7 @@ const (
 	DefaultNodeListenPeerAddr   string = "127.0.0.1:5290"
 	DefaultNodeListenClientAddr string = "127.0.0.1:5230"
 	DefaultNodeMaxSnapshots     uint32 = 5
+	DefaultNodeRequestsMerged   bool   = false
 )
 
 // -- store default value

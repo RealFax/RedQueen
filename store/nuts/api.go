@@ -121,7 +121,7 @@ func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
 			return err
 		}
 		// notify watcher key-value update
-		s.watcherChild.Update(key, value)
+		s.watcherChild.Update(key, value, ttl)
 		return nil
 	})
 }
@@ -142,7 +142,7 @@ func (s *storeAPI) TrySetWithTTL(key, value []byte, ttl uint32) error {
 		}
 
 		// notify watcher key-value update
-		s.watcherChild.Update(key, value)
+		s.watcherChild.Update(key, value, ttl)
 		return nil
 	})
 }
@@ -156,7 +156,7 @@ func (s *storeAPI) Del(key []byte) error {
 		if err := tx.Delete(s.namespace, key); err != nil {
 			return err
 		}
-		s.watcherChild.Update(key, nil)
+		s.watcherChild.Update(key, nil, 0)
 		return nil
 	})
 }
@@ -179,7 +179,7 @@ func (s *storeAPI) GetNamespace() string {
 }
 
 func (s *storeAPI) GetWatch() store.WatcherMetadata {
-	return s.watcher.Get()
+	return s.watcher.Metadata()
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {

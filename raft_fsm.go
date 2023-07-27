@@ -1,111 +1,38 @@
 package red
 
 import (
+	"bytes"
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
-
 	"io"
 )
 
 type FSMHandleFunc func(*serverpb.RaftLogPayload) error
-
 type FSM struct {
-	handles map[serverpb.RaftLogCommand]FSMHandleFunc
-	store   store.Store
-}
-
-func (f *FSM) namespaceSwitch(namespace *string) (store.Namespace, error) {
-	if namespace == nil {
-		return f.store, nil
-	}
-	storeAPI, err := f.store.Namespace(*namespace)
-	if err != nil {
-		return nil, errors.Wrap(err, "namespace switch error")
-	}
-	return storeAPI, nil
-}
-
-func (f *FSM) hSetWithTTL(payload *serverpb.RaftLogPayload) error {
-	if payload.Ttl == nil || payload.Key == nil || payload.Value == nil {
-		return errors.New("invalid SetWithTTL args")
-	}
-
-	dest, err := f.namespaceSwitch(payload.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return dest.SetWithTTL(payload.Key, payload.Value, *payload.Ttl)
-}
-
-func (f *FSM) hTrySetWithTTL(payload *serverpb.RaftLogPayload) error {
-	if payload.Ttl == nil || payload.Key == nil || payload.Value == nil {
-		return errors.New("invalid TrySetWithTTL args")
-	}
-
-	dest, err := f.namespaceSwitch(payload.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return dest.TrySetWithTTL(payload.Key, payload.Value, *payload.Ttl)
-}
-
-func (f *FSM) hSet(payload *serverpb.RaftLogPayload) error {
-	if payload.Key == nil || payload.Value == nil {
-		return errors.New("invalid Set args")
-	}
-
-	dest, err := f.namespaceSwitch(payload.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return dest.Set(payload.Key, payload.Value)
-}
-
-func (f *FSM) hTrySet(payload *serverpb.RaftLogPayload) error {
-	if payload.Key == nil || payload.Value == nil {
-		return errors.New("invalid TrySet args")
-	}
-
-	dest, err := f.namespaceSwitch(payload.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return dest.TrySet(payload.Key, payload.Value)
-}
-
-func (f *FSM) hDel(payload *serverpb.RaftLogPayload) error {
-	if payload.Key == nil {
-		return errors.New("invalid Del args")
-	}
-
-	dest, err := f.namespaceSwitch(payload.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return dest.Del(payload.Key)
+	handlers map[serverpb.RaftLogCommand]FSMHandleFunc
+	store    store.Store
 }
 
 func (f *FSM) Apply(log *raft.Log) any {
 	switch log.Type {
 	case raft.LogCommand:
-		var msg serverpb.RaftLogPayload
-		if err := proto.Unmarshal(log.Data, &msg); err != nil {
-			return errors.Wrap(err, "unmarshal proto error:")
+		msgs, err := UnpackLog(bytes.NewReader(log.Data))
+		if err != nil {
+			return err
 		}
-		handle, ok := f.handles[msg.Command]
-		if !ok {
-			return errors.New("there's no corresponding command handle")
+		for _, msg := range msgs {
+			handle, ok := f.handlers[msg.Command]
+			if !ok {
+				return errors.New("there's no corresponding command handle")
+			}
+			if err = handle(msg); err != nil {
+				return err
+			}
 		}
-		return handle(&msg)
+		return nil
 	}
 	return nil
 }
@@ -123,16 +50,9 @@ func (f *FSM) Restore(rc io.ReadCloser) error {
 	return f.store.Restore(rc)
 }
 
-func NewFSM(s store.Store) *FSM {
-	fsm := &FSM{store: s}
-
-	fsm.handles = map[serverpb.RaftLogCommand]FSMHandleFunc{
-		serverpb.RaftLogCommand_SetWithTTL:    fsm.hSetWithTTL,
-		serverpb.RaftLogCommand_TrySetWithTTL: fsm.hTrySetWithTTL,
-		serverpb.RaftLogCommand_Set:           fsm.hSet,
-		serverpb.RaftLogCommand_TrySet:        fsm.hTrySet,
-		serverpb.RaftLogCommand_Del:           fsm.hDel,
+func NewFSM(s store.Store, handlers map[serverpb.RaftLogCommand]FSMHandleFunc) *FSM {
+	return &FSM{
+		handlers: handlers,
+		store:    s,
 	}
-
-	return fsm
 }

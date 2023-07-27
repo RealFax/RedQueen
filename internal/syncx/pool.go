@@ -5,12 +5,6 @@ import (
 	"sync/atomic"
 )
 
-type Pool[T any] struct {
-	pool    sync.Pool
-	onAlloc func(val T)
-	onFree  func(val T)
-}
-
 type PoolVarWrap[T any] struct {
 	freed atomic.Bool
 	pool  *Pool[T]
@@ -32,6 +26,12 @@ func (pv *PoolVarWrap[T]) Val() T {
 	return pv.val
 }
 
+type Pool[T any] struct {
+	pool    sync.Pool
+	onAlloc func(val T)
+	onFree  func(val T)
+}
+
 func (p *Pool[T]) Alloc() *PoolVarWrap[T] {
 	val := p.pool.Get().(T)
 	if p.onAlloc != nil {
@@ -51,6 +51,9 @@ func (p *Pool[T]) Free(val T) {
 	p.pool.Put(val)
 }
 
+// NewPool
+//
+// deprecated: syncx has been deprecated due to performance issues
 func NewPool[T any](new func() T, onAlloc func(val T), onFree func(val T)) *Pool[T] {
 	return &Pool[T]{
 		pool: sync.Pool{

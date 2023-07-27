@@ -51,6 +51,9 @@ func (c *clientConn) swapLeaderConn(new string) error {
 }
 
 func (c *clientConn) listenLeader() {
+	wg := sync.WaitGroup{}
+	wg.Add(len(c.readOnly))
+
 	finalTry := func(conn *grpc.ClientConn) {
 		var (
 			err     error
@@ -65,6 +68,7 @@ func (c *clientConn) listenLeader() {
 			if xResp.State == serverpb.RaftState_leader {
 				_ = c.swapLeaderConn(conn.Target())
 			}
+			wg.Done()
 		}
 
 		for {
@@ -90,6 +94,8 @@ func (c *clientConn) listenLeader() {
 	for _, conn := range c.readOnly {
 		go finalTry(conn)
 	}
+
+	wg.Wait()
 }
 
 func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
