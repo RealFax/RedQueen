@@ -19,7 +19,11 @@ func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientCon
 		if writeable {
 			return conn.WriteOnly()
 		}
-		return conn.ReadOnly()
+		r, err := conn.ReadOnly()
+		if err != nil {
+			return conn.WriteOnly()
+		}
+		return r, nil
 	}()
 	if err != nil {
 		return newEmptyValue[T](), err

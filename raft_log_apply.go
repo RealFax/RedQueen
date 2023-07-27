@@ -1,6 +1,7 @@
 package red
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"github.com/RealFax/RedQueen/api/serverpb"
@@ -18,23 +19,25 @@ import (
 
 var (
 	ErrApplyLogTimeTravelDone = errors.New("raft apply log time-travel done")
+	ErrApplyLogDone           = errors.New("raft apply log done")
 )
 
 func RaftLogPayloadKey(m *serverpb.RaftLogPayload) uint64 {
-	buf := bufferPool.Alloc()
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer buf.Reset()
 
 	p := make([]byte, 4)
 	binary.LittleEndian.PutUint32(p, uint32(m.Command))
-	buf.Val().Write(p)
+	buf.Write(p)
 
-	buf.Val().Write(m.Key)
+	buf.Write(m.Key)
 	if m.Namespace != nil {
-		buf.Val().WriteString(*m.Namespace)
+		buf.WriteString(*m.Namespace)
 	}
 
 	x := xxhash.New()
-	io.Copy(x, buf.Val())
-	buf.Free()
+	io.Copy(x, buf)
+	bufferPool.Put(buf)
 
 	return x.Sum64()
 }
@@ -50,12 +53,18 @@ type raftSingleLogApply struct {
 }
 
 func (a *raftSingleLogApply) Apply(_ *context.Context, m *serverpb.RaftLogPayload, timeout time.Duration) error {
-	buf := bufferPool.Alloc()
-	defer buf.Free()
-	if err := PackSingleLog(buf.Val(), m); err != nil {
-		return err
+	b := LogPackHeader(SingleLogPack)
+	cmd, err := proto.Marshal(m)
+	if err != nil {
+		return errors.Wrap(err, "marshal raft log error")
 	}
-	return a.ApplyFunc(buf.Val().Bytes(), timeout).Error()
+	b = append(b, cmd...)
+
+	resp := a.ApplyFunc(b, timeout)
+	if resp.Error() != nil {
+		return resp.Error()
+	}
+	return ErrApplyLogDone
 }
 
 func NewRaftSingeLogApply(af ApplyFunc) RaftApply {
@@ -92,7 +101,7 @@ func (a *raftMultipleLogApply) merge() {
 	a.rwm.Lock() // stop recv apply request
 	var (
 		off    = 0
-		size   = atomic.LoadInt32(&a.counter)
+		size   = a.filter.Size()
 		w      = collapsar.NewWriter(size)
 		notify = make([]context.CancelCauseFunc, size)
 	)
@@ -107,20 +116,26 @@ func (a *raftMultipleLogApply) merge() {
 	// reset state with start recv apply request
 	a.reset()
 
-	buf := bufferPool.Alloc()
-	defer buf.Free()
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(buf)
+	defer buf.Reset()
 
-	putLogPackHeader(buf.Val(), MultipleLogPack)
-	w.Encode(buf.Val())
+	buf.Write(LogPackHeader(MultipleLogPack))
+	w.Encode(buf)
 
 	// apply log to followers
-	resp := a.applyFunc(buf.Val().Bytes(), a.applyTimeout)
-	if resp == nil {
-		return
+	var (
+		err  = ErrApplyLogDone
+		resp = a.applyFunc(buf.Bytes(), a.applyTimeout)
+	)
+
+	if resp.Error() != nil {
+		err = resp.Error()
 	}
 
+	// response
 	for _, causeFunc := range notify {
-		causeFunc(resp.Error())
+		causeFunc(err)
 	}
 }
 

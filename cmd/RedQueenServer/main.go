@@ -22,6 +22,7 @@ func main() {
 		fmt.Println("[-] init server failed, ", err)
 		return
 	}
+	defer server.Close()
 
 	if err = server.ListenServer(); err != nil {
 		fmt.Println("[-] listen client failed, ", err)

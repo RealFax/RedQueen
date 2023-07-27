@@ -146,7 +146,7 @@ func (v validatorStringValue[T]) String() string {
 
 func DecodeClusterBootstraps(s string) ([]ClusterBootstrap, error) {
 	if s == "" {
-		return []ClusterBootstrap{}, nil
+		return []ClusterBootstrap{}, errors.New("invalid cluster bootstraps")
 	}
 
 	cs := strings.Split(s, ",")
