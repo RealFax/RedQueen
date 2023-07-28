@@ -102,6 +102,10 @@ func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) 
 		Result: func() []*serverpb.PrefixScanResponse_PrefixScanResult {
 			sres := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(result))
 			for i, value := range result {
+				// todo: this part code will be removed future golang version
+				// ---- start ----
+				value := value
+				// ---- end ----
 				sres[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
 					Key:       value.Key,
 					Value:     value.Data,
