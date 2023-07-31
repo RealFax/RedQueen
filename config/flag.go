@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/pkg/errors"
 	"net/netip"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (

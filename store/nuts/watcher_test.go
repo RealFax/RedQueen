@@ -3,10 +3,11 @@ package nuts_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/RealFax/RedQueen/store/nuts"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/RealFax/RedQueen/store/nuts"
 )
 
 var (

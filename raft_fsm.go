@@ -2,12 +2,13 @@ package red
 
 import (
 	"bytes"
-	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/store"
+	"io"
 
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"io"
+
+	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/RealFax/RedQueen/store"
 )
 
 type FSMHandleFunc func(*serverpb.RaftLogPayload) error

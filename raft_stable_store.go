@@ -3,6 +3,7 @@ package red
 import (
 	"encoding/binary"
 	"errors"
+
 	"github.com/RealFax/RedQueen/store"
 )
 

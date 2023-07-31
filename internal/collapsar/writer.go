@@ -2,10 +2,11 @@ package collapsar
 
 import (
 	"encoding/gob"
-	"github.com/pkg/errors"
 	"io"
 	"sync"
 	"sync/atomic"
+
+	"github.com/pkg/errors"
 )
 
 type writer struct {

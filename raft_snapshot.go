@@ -2,8 +2,9 @@ package red
 
 import (
 	"bytes"
-	"github.com/hashicorp/raft"
 	"io"
+
+	"github.com/hashicorp/raft"
 )
 
 type Snapshot struct {
