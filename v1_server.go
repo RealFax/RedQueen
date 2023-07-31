@@ -30,7 +30,7 @@ type Locker interface {
 	TryLock(context.Context, *serverpb.TryLockRequest) (*serverpb.TryLockResponse, error)
 }
 
-type RedQueen interface {
+type Internal interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
 	RaftState(context.Context, *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error)

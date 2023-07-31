@@ -26,11 +26,11 @@ const (
 // -- cluster default value
 
 const (
-	DefaultClusterState string = string(ClusterStateNew)
+	DefaultClusterState = string(ClusterStateNew)
 )
 
 // -- log default value
 
 const (
-	DefaultLogLogger string = string(LogLoggerZap)
+	DefaultLogLogger = string(LogLoggerZap)
 )
