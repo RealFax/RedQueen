@@ -103,7 +103,7 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs := flag.NewFlagSet("server", flag.ExitOnError)
 
 	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), "Usage of RedQueen:")
+		fmt.Fprint(fs.Output(), serverUsage)
 		fs.PrintDefaults()
 	}
 
@@ -210,7 +210,7 @@ func ReadFromArgs(args ...string) (*Config, error) {
 			return nil, err
 		}
 	default:
-		fmt.Print(usage)
+		fmt.Fprint(os.Stderr, usage)
 		return nil, errors.New("unknown subcommand")
 	}
 

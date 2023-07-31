@@ -2,8 +2,8 @@ package nuts
 
 import (
 	"encoding/json"
+	"github.com/RealFax/RedQueen/common/hack"
 	"github.com/RealFax/RedQueen/store"
-	"github.com/RealFax/RedQueen/utils/hack"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"sync"

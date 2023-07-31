@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"github.com/RealFax/RedQueen/internal/collapsar"
 	"io"
+	"os"
 	"testing"
 )
+
+func TestNewReader(t *testing.T) {
+	collapsar.NewReader(os.Stdin)
+}
 
 func TestReader_Next(t *testing.T) {
 	w := collapsar.NewWriter(4)

@@ -30,7 +30,7 @@ type Locker interface {
 	TryLock(context.Context, *serverpb.TryLockRequest) (*serverpb.TryLockResponse, error)
 }
 
-type RedQueen interface {
+type Internal interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
 	RaftState(context.Context, *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error)
@@ -69,7 +69,7 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 }
 
 func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.GetResponse, error) {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -87,12 +87,12 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 }
 
 func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) (*serverpb.PrefixScanResponse, error) {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	result, err := storeAPI.PrefixSearchScan(req.Prefix, req.GetReg(), int(req.Offset), int(req.Limit))
+	scanResults, err := storeAPI.PrefixSearchScan(req.Prefix, req.GetReg(), int(req.Offset), int(req.Limit))
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
@@ -100,16 +100,20 @@ func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) 
 	return &serverpb.PrefixScanResponse{
 		Header: s.responseHeader(),
 		Result: func() []*serverpb.PrefixScanResponse_PrefixScanResult {
-			sres := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(result))
-			for i, value := range result {
-				sres[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
+			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(scanResults))
+			for i, value := range scanResults {
+				// todo: this part code will be removed future golang version
+				// ---- start ----
+				value := value
+				// ---- end ----
+				results[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
 					Key:       value.Key,
 					Value:     value.Data,
 					Timestamp: value.Timestamp,
 					Ttl:       value.TTL,
 				}
 			}
-			return sres
+			return results
 		}(),
 	}, nil
 }
@@ -151,7 +155,7 @@ func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serv
 }
 
 func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServer) error {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}

@@ -15,7 +15,7 @@ const (
 // -- store default value
 
 const (
-	DefaultStoreBackend string = string(StoreBackendNuts)
+	DefaultStoreBackend = string(StoreBackendNuts)
 
 	DefaultStoreNutsNodeNum    int64  = 1
 	DefaultStoreNutsSync       bool   = false
@@ -26,11 +26,11 @@ const (
 // -- cluster default value
 
 const (
-	DefaultClusterState string = string(ClusterStateNew)
+	DefaultClusterState = string(ClusterStateNew)
 )
 
 // -- log default value
 
 const (
-	DefaultLogLogger string = string(LogLoggerZap)
+	DefaultLogLogger = string(LogLoggerZap)
 )
