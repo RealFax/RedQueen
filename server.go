@@ -42,7 +42,7 @@ type Server struct {
 	serverpb.UnimplementedRedQueenServer
 }
 
-func (s *Server) currentNamespace(namespace *string) (store.Namespace, error) {
+func (s *Server) namespace(namespace *string) (store.Namespace, error) {
 	var (
 		err      error
 		storeAPI store.Namespace = s.store
@@ -85,7 +85,7 @@ func (s *Server) _stateUpdater() {
 	}
 }
 
-func (s *Server) ListenServer() error {
+func (s *Server) ListenAndServe() error {
 	listener, err := net.Listen("tcp", s.cfg.Node.ListenClientAddr)
 	if err != nil {
 		return err

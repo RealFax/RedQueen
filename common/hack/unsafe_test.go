@@ -1,7 +1,7 @@
 package hack_test
 
 import (
-	"github.com/RealFax/RedQueen/utils/hack"
+	"github.com/RealFax/RedQueen/common/hack"
 	"testing"
 )
 

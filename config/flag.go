@@ -95,26 +95,6 @@ func (u *uin32Value) Set(s string) error {
 
 func (u *uin32Value) String() string { return strconv.FormatUint(uint64(*u), 10) }
 
-// -- EnumStoreBackend value --
-
-type enumStoreBackendValue EnumStoreBackend
-
-func newEnumStoreBackendValue(val string, p *EnumStoreBackend) *enumStoreBackendValue {
-	*p = EnumStoreBackend(val)
-	return (*enumStoreBackendValue)(p)
-}
-
-func (e *enumStoreBackendValue) Set(s string) error {
-	val := EnumStoreBackend(s)
-	if err := val.Valid(); err != nil {
-		return err
-	}
-	*e = enumStoreBackendValue(val)
-	return nil
-}
-
-func (e *enumStoreBackendValue) String() string { return string(*e) }
-
 // -- stringValidator value --
 
 type validatorStringValue[T stringValidator] struct{ ptr *T }
