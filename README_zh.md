@@ -20,6 +20,22 @@ _灵感来源于《生化危机》中的超级计算机(Red Queen), 分布式key
 
 [代码示例](https://github.com/RealFax/RedQueen/tree/master/client/example)
 
+## 写入 & 读取
+_基于raft算法实现的RedQueen具备单节点写入(Leader node)多节点读取(Follower node)的特性_
+
+### 仅写入调用
+- `Set`
+- `TrySet`
+- `Delete`
+- `Lock` <!-- IAF start -->
+- `Unlock`
+- `TryLock` <!-- IAF end -->
+
+### 仅读取调用
+- `Get`
+- `PrefixScan`
+- `Watch`
+
 ## 关于内部高级功能
 内部高级功能需要进行长时间的实验才能保证他的可靠性
 

@@ -1,15 +1,17 @@
 package red
 
 import (
-	"github.com/RealFax/RedQueen/store"
-	"github.com/hashicorp/raft"
-	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
-	"github.com/pkg/errors"
 	"io"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/hashicorp/raft"
+	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 type RaftConfig struct {

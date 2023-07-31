@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type Validator interface {

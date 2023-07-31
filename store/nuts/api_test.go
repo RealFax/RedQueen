@@ -3,12 +3,13 @@ package nuts_test
 import (
 	"bytes"
 	"context"
-	"github.com/RealFax/RedQueen/store"
-	"github.com/RealFax/RedQueen/store/nuts"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/RealFax/RedQueen/store"
+	"github.com/RealFax/RedQueen/store/nuts"
 )
 
 var (

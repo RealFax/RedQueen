@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
-	"github.com/RealFax/RedQueen/api/serverpb"
+
 	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/api/serverpb"
 )
 
 type InternalClient interface {

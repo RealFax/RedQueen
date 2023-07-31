@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/RealFax/RedQueen/client"
 	"log"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/RealFax/RedQueen/client"
 )
 
 func main() {

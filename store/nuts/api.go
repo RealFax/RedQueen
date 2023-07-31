@@ -3,13 +3,15 @@ package nuts
 import (
 	"bytes"
 	"context"
-	"github.com/RealFax/RedQueen/store"
-	"github.com/nutsdb/nutsdb"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sync"
 	"sync/atomic"
+
+	"github.com/nutsdb/nutsdb"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {

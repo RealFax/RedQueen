@@ -1,8 +1,9 @@
 package config_test
 
 import (
-	"github.com/RealFax/RedQueen/config"
 	"testing"
+
+	"github.com/RealFax/RedQueen/config"
 )
 
 func unexpected(t *testing.T, validator config.Validator) {

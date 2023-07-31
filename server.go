@@ -3,16 +3,18 @@ package red
 import (
 	"bytes"
 	"context"
+	"net"
+	"sync"
+	"time"
+
+	"github.com/hashicorp/raft"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/config"
 	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
-	"github.com/hashicorp/raft"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"net"
-	"sync"
-	"time"
 )
 
 var (

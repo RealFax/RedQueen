@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/pkg/errors"
 	"sync/atomic"
+
+	"github.com/pkg/errors"
 )
 
 const DefaultWatchBufSize uint32 = 4

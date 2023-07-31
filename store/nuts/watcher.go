@@ -2,13 +2,15 @@ package nuts
 
 import (
 	"encoding/json"
-	"github.com/RealFax/RedQueen/common/hack"
-	"github.com/RealFax/RedQueen/store"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/common/hack"
+	"github.com/RealFax/RedQueen/store"
 )
 
 const WatcherNotifyValueSize = 1024

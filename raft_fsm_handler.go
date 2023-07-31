@@ -1,9 +1,10 @@
 package red
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/store"
-	"github.com/pkg/errors"
 )
 
 type FSMHandlers struct {
