@@ -19,16 +19,16 @@ type FSM struct {
 func (f *FSM) Apply(log *raft.Log) any {
 	switch log.Type {
 	case raft.LogCommand:
-		msgs, err := UnpackLog(bytes.NewReader(log.Data))
+		messages, err := UnpackLog(bytes.NewReader(log.Data))
 		if err != nil {
 			return err
 		}
-		for _, msg := range msgs {
-			handle, ok := f.handlers[msg.Command]
+		for _, message := range messages {
+			handle, ok := f.handlers[message.Command]
 			if !ok {
-				return errors.New("there's no corresponding command handle")
+				return errors.Errorf("unimplemented command %s handler", message.Command.String())
 			}
-			if err = handle(msg); err != nil {
+			if err = handle(message); err != nil {
 				return err
 			}
 		}

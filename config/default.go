@@ -15,7 +15,7 @@ const (
 // -- store default value
 
 const (
-	DefaultStoreBackend string = string(StoreBackendNuts)
+	DefaultStoreBackend = string(StoreBackendNuts)
 
 	DefaultStoreNutsNodeNum    int64  = 1
 	DefaultStoreNutsSync       bool   = false

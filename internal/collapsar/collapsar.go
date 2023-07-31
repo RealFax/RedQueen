@@ -8,6 +8,7 @@ type Writer interface {
 	Encode(w io.Writer) error
 	Add(entry []byte) error
 	Wait()
+	Close() error
 }
 
 type Reader interface {
