@@ -41,6 +41,17 @@ func TestWriter_Wait(t *testing.T) {
 	t.Log("[+] Done")
 }
 
+func TestWriter_Close(t *testing.T) {
+	w := collapsar.NewWriter(2)
+	if err := w.Add([]byte{1}); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	w.Close()
+	if err := w.Add([]byte{1}); err != nil {
+		t.Log("expected error:", err)
+	}
+}
+
 func BenchmarkWriter_Add(b *testing.B) {
 	w := collapsar.NewWriter(int32(b.N))
 	for i := 0; i < b.N; i++ {
