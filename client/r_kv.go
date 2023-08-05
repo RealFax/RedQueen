@@ -19,6 +19,7 @@ type KvClient interface {
 	TrySet(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error
 	Delete(ctx context.Context, key []byte, namespace *string) error
 	Watch(ctx context.Context, watcher *Watcher) error
+	WatchPrefix(ctx context.Context, watcher *Watcher) error
 }
 
 type kvClient struct {
