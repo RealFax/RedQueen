@@ -3,10 +3,11 @@ package red
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
-	"time"
 )
 
 type LockerBackendWrapper struct {

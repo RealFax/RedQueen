@@ -3,9 +3,10 @@ package config
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
-	"os"
 )
 
 type ServerEnv interface {

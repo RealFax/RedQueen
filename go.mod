@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/BurntSushi/toml v1.2.1
+	github.com/OneOfOne/xxhash v1.2.2
 	github.com/RealFax/order-map v0.2.0
 	github.com/cespare/xxhash v1.1.0
 	github.com/google/uuid v1.3.0

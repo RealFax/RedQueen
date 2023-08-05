@@ -1,8 +1,9 @@
 package hack_test
 
 import (
-	"github.com/RealFax/RedQueen/common/hack"
 	"testing"
+
+	"github.com/RealFax/RedQueen/common/hack"
 )
 
 func TestString2Bytes(t *testing.T) {

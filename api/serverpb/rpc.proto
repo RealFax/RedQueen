@@ -96,6 +96,15 @@ message WatchRequest {
   optional uint32 buf_size = 4;
 }
 
+message WatchPrefixRequest {
+  // prefix is the prefix, keys prefix
+  bytes prefix = 1;
+  // namespace means the same key-value store can exist in different namespaces
+  optional string namespace = 3;
+  // buf_size, declare the buffer size of watch
+  optional uint32 buf_size = 4;
+}
+
 message WatchResponse {
   ResponseHeader header = 1;
   // update_seq is the updated serial number (current session)
@@ -103,7 +112,8 @@ message WatchResponse {
   // timestamp is the when this value was updated
   int64 timestamp = 3;
   uint32 ttl = 4;
-  bytes data = 5;
+  bytes key = 5;
+  bytes value = 6;
 }
 
 service KV {
@@ -113,12 +123,15 @@ service KV {
   rpc TrySet(SetRequest) returns (SetResponse) {}
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
   rpc Watch(WatchRequest) returns (stream WatchResponse) {}
+  rpc WatchPrefix(WatchPrefixRequest) returns (stream WatchResponse) {}
 }
 
 // --------------- Locker --------------- //
 message LockRequest {
   string lock_id = 1;
-  int64 ttl = 2;
+  // ttl indicates the ttl time of this key-value store.
+  // -1 means never ttl, the unit is second.
+  int32 ttl = 2;
 }
 
 message LockResponse {
@@ -135,7 +148,10 @@ message UnlockResponse {
 
 message TryLockRequest {
   string lock_id = 1;
-  int64 ttl = 2;
+  // ttl indicates the ttl time of this key-value store.
+  // -1 means never ttl, the unit is second.
+  int32 ttl = 2;
+  // deadline to TryLock
   int64 deadline = 3;
 }
 

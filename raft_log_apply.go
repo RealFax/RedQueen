@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/internal/collapsar"
+	"io"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	orderMap "github.com/RealFax/order-map"
 	"github.com/cespare/xxhash"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"io"
-	"sync"
-	"sync/atomic"
-	"time"
+
+	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 var (

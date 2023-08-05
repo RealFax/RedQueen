@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/RealFax/RedQueen/client"
 	"time"
+
+	"github.com/RealFax/RedQueen/client"
 )
 
 type appendCluster struct {
