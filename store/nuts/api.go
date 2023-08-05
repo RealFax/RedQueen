@@ -176,12 +176,13 @@ func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
 	return s.watcherChild.Watch(key), nil
 }
 
-func (s *storeAPI) GetNamespace() string {
-	return s.namespace
+func (s *storeAPI) WatchPrefix(prefix []byte) store.WatcherNotify {
+	// prefix watch strict mode is disabled
+	return s.watcherChild.WatchPrefix(prefix)
 }
 
-func (s *storeAPI) GetWatch() store.WatcherMetadata {
-	return s.watcher.Metadata()
+func (s *storeAPI) GetNamespace() string {
+	return s.namespace
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {

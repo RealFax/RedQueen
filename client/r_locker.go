@@ -7,9 +7,9 @@ import (
 )
 
 type LockerClient interface {
-	Lock(ctx context.Context, lockID string, ttl int64) error
+	Lock(ctx context.Context, lockID string, ttl int32) error
 	Unlock(ctx context.Context, lockID string) error
-	TryLock(ctx context.Context, lockID string, ttl, deadline int64) error
+	TryLock(ctx context.Context, lockID string, ttl int32, deadline int64) error
 }
 
 type lockerClient struct {
@@ -17,7 +17,7 @@ type lockerClient struct {
 	conn Conn
 }
 
-func (c *lockerClient) Lock(ctx context.Context, lockID string, ttl int64) error {
+func (c *lockerClient) Lock(ctx context.Context, lockID string, ttl int32) error {
 	client, err := newClientCall[serverpb.LockerClient](true, c.conn, serverpb.NewLockerClient)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func (c *lockerClient) Unlock(ctx context.Context, lockID string) error {
 	return err
 }
 
-func (c *lockerClient) TryLock(ctx context.Context, lockID string, ttl, deadline int64) error {
+func (c *lockerClient) TryLock(ctx context.Context, lockID string, ttl int32, deadline int64) error {
 	client, err := newClientCall[serverpb.LockerClient](true, c.conn, serverpb.NewLockerClient)
 	if err != nil {
 		return err
