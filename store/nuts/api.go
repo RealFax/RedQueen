@@ -3,13 +3,15 @@ package nuts
 import (
 	"bytes"
 	"context"
-	"github.com/RealFax/RedQueen/store"
-	"github.com/nutsdb/nutsdb"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sync"
 	"sync/atomic"
+
+	"github.com/nutsdb/nutsdb"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
@@ -174,12 +176,13 @@ func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
 	return s.watcherChild.Watch(key), nil
 }
 
-func (s *storeAPI) GetNamespace() string {
-	return s.namespace
+func (s *storeAPI) WatchPrefix(prefix []byte) store.WatcherNotify {
+	// prefix watch strict mode is disabled
+	return s.watcherChild.WatchPrefix(prefix)
 }
 
-func (s *storeAPI) GetWatch() store.WatcherMetadata {
-	return s.watcher.Metadata()
+func (s *storeAPI) GetNamespace() string {
+	return s.namespace
 }
 
 func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {

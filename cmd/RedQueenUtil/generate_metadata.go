@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type generateMetadata struct {

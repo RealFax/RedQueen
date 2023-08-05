@@ -1,11 +1,13 @@
 package nuts
 
 import (
-	"github.com/RealFax/RedQueen/store"
-	"github.com/nutsdb/nutsdb"
-	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
+
+	"github.com/nutsdb/nutsdb"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 // db state

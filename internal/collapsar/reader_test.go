@@ -2,10 +2,11 @@ package collapsar_test
 
 import (
 	"bytes"
-	"github.com/RealFax/RedQueen/internal/collapsar"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 func TestNewReader(t *testing.T) {

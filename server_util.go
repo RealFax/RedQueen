@@ -2,10 +2,11 @@ package red
 
 import (
 	"errors"
+	"path/filepath"
+
 	"github.com/RealFax/RedQueen/config"
 	"github.com/RealFax/RedQueen/store"
 	"github.com/RealFax/RedQueen/store/nuts"
-	"path/filepath"
 )
 
 func newNutsStore(cfg config.Store, dir string) (store.Store, error) {
