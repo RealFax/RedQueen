@@ -22,6 +22,7 @@ type KV interface {
 	TrySet(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
 	Delete(context.Context, *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error)
 	Watch(*serverpb.WatchRequest, serverpb.KV_WatchServer) error
+	WatchPrefix(*serverpb.WatchPrefixRequest, serverpb.KV_WatchPrefixServer) error
 }
 
 type Locker interface {
@@ -173,29 +174,58 @@ func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServe
 	defer watcher.Close()
 
 	for {
-		select {
-		case value := <-watcher.Notify():
-			if value.Deleted() && !req.IgnoreErrors {
-				return status.Error(codes.Unavailable, "key has deleted")
-			}
-			if err = stream.Send(&serverpb.WatchResponse{
-				Header:    s.responseHeader(),
-				UpdateSeq: value.Seq,
-				Timestamp: value.Timestamp,
-				Ttl:       value.TTL,
-				Data: func() []byte {
-					if value.Data == nil {
-						return nil
-					}
-					return *value.Data
-				}(),
-			}); err != nil {
-				// unrecoverable error
-				return status.Error(codes.FailedPrecondition, err.Error())
-			}
+		value := <-watcher.Notify()
+		if value.Deleted() && !req.IgnoreErrors {
+			return status.Error(codes.Unavailable, "key has deleted")
+		}
+		if err = stream.Send(&serverpb.WatchResponse{
+			Header:    s.responseHeader(),
+			UpdateSeq: value.Seq,
+			Timestamp: value.Timestamp,
+			Ttl:       value.TTL,
+			Key:       value.Key,
+			Value: func() []byte {
+				if value.Value == nil {
+					return nil
+				}
+				return *value.Value
+			}(),
+		}); err != nil {
+			// unrecoverable error
+			return status.Error(codes.FailedPrecondition, err.Error())
 		}
 	}
 
+}
+
+func (s *Server) WatchPrefix(req *serverpb.WatchPrefixRequest, stream serverpb.KV_WatchPrefixServer) error {
+	storeAPI, err := s.namespace(req.Namespace)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	watcher := storeAPI.WatchPrefix(req.Prefix)
+	defer watcher.Close()
+
+	for {
+		value := <-watcher.Notify()
+		if err = stream.Send(&serverpb.WatchResponse{
+			Header:    s.responseHeader(),
+			UpdateSeq: value.Seq,
+			Timestamp: value.Timestamp,
+			Ttl:       value.TTL,
+			Key:       value.Key,
+			Value: func() []byte {
+				if value.Value == nil {
+					return nil
+				}
+				return *value.Value
+			}(),
+		}); err != nil {
+			// unrecoverable error
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+	}
 }
 
 func (s *Server) Lock(_ context.Context, req *serverpb.LockRequest) (*serverpb.LockResponse, error) {

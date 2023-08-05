@@ -22,7 +22,7 @@ func main() {
 	defer c.Close()
 
 	// watch case
-	watcher := client.NewWatcher([]byte("Key1"), true)
+	watcher := client.NewWatcher([]byte("Key1"))
 	go func() {
 		if wErr := c.Watch(context.Background(), watcher); err != nil {
 			log.Fatal("client watch error:", wErr)
@@ -35,11 +35,11 @@ func main() {
 		}
 		for {
 			val := <-notify
-			if val.Data == nil {
+			if val.Value == nil {
 				log.Println("[Watch] key has deleted")
 				return
 			}
-			log.Printf("[Watch] Value: %s, TTL: %d, Timestamp: %d", val.Data, val.TTL, val.Timestamp)
+			log.Printf("[Watch] Value: %s, TTL: %d, Timestamp: %d", val.Value, val.TTL, val.Timestamp)
 		}
 	}()
 

@@ -3,6 +3,7 @@ package nuts
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/base64"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,6 +22,10 @@ func WatchKey(key []byte) (hash uint64) {
 	hash ^= hash >> 1
 	hash += hash << 15
 	return
+}
+
+func PrefixKey(prefix []byte) string {
+	return base64.StdEncoding.EncodeToString(prefix)
 }
 
 func BackupReader(dst string, src io.Reader) error {
