@@ -3,17 +3,12 @@ package client
 import (
 	"context"
 	"crypto/rand"
+	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"math/big"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/keepalive"
-
-	"github.com/RealFax/RedQueen/api/serverpb"
 )
 
 type Conn interface {
@@ -143,7 +138,7 @@ func (c *clientConn) Close() error {
 	return nil
 }
 
-func NewClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn, error) {
+func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOption) (Conn, error) {
 	cc := &clientConn{
 		state:     atomic.Bool{},
 		ctx:       ctx,
@@ -156,19 +151,7 @@ func NewClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn
 	var (
 		err  error
 		conn *grpc.ClientConn
-		opts = []grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithKeepaliveParams(keepalive.ClientParameters{
-				Time:                time.Second * 3,
-				Timeout:             time.Millisecond * 100,
-				PermitWithoutStream: true,
-			}),
-		}
 	)
-
-	if syncConn {
-		opts = append(opts, grpc.WithBlock())
-	}
 
 	// init
 	for _, endpoint := range endpoints {
