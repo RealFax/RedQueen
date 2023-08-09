@@ -1,6 +1,9 @@
 package client
 
-import "context"
+import (
+	"context"
+	"google.golang.org/grpc"
+)
 
 type Client struct {
 	InternalClient
@@ -18,7 +21,7 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func New(ctx context.Context, endpoints []string, syncConn bool) (*Client, error) {
+func New(ctx context.Context, endpoints []string, opts ...grpc.DialOption) (*Client, error) {
 	var (
 		err    error
 		client = &Client{
@@ -28,7 +31,7 @@ func New(ctx context.Context, endpoints []string, syncConn bool) (*Client, error
 
 	client.ctx, client.cancelFunc = context.WithCancel(ctx)
 
-	if client.conn, err = NewClientConn(ctx, endpoints, syncConn); err != nil {
+	if client.conn, err = NewClientConn(ctx, endpoints, opts...); err != nil {
 		return nil, err
 	}
 
