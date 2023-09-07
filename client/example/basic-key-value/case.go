@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -15,7 +17,7 @@ func main() {
 		//"127.0.0.1:3230",
 		//"127.0.0.1:4230",
 		"127.0.0.1:5230",
-	}, false)
+	}, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}

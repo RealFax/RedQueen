@@ -23,8 +23,9 @@ func (c *internalClient) AppendCluster(ctx context.Context, serverID, peerAddr s
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
-	_, err = client.AppendCluster(ctx, &serverpb.AppendClusterRequest{
+	_, err = client.instance.AppendCluster(ctx, &serverpb.AppendClusterRequest{
 		ServerId: serverID,
 		PeerAddr: peerAddr,
 		Voter:    voter,
@@ -41,12 +42,13 @@ func (c *internalClient) LeaderMonitor(ctx context.Context, recv *chan bool) err
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithCancel(ctx)
 	defer cancel()
 
-	monitor, err := client.LeaderMonitor(ctx, &serverpb.LeaderMonitorRequest{})
+	monitor, err := client.instance.LeaderMonitor(ctx, &serverpb.LeaderMonitorRequest{})
 	if err != nil {
 		return err
 	}
