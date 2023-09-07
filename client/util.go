@@ -9,13 +9,13 @@ func ignoreBytes(s []byte) bool {
 	return s == nil
 }
 
-func newEmptyValue[T any]() T {
-	var v T
-	return v
+type wrapperClient[T any] struct {
+	conn     *GrpcPoolConn
+	instance T
 }
 
-func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientConnInterface) T) (T, error) {
-	gConn, err := func() (*grpc.ClientConn, error) {
+func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientConnInterface) T) (*wrapperClient[T], error) {
+	gConn, err := func() (*GrpcPoolConn, error) {
 		if writeable {
 			return conn.WriteOnly()
 		}
@@ -26,9 +26,12 @@ func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientCon
 		return r, nil
 	}()
 	if err != nil {
-		return newEmptyValue[T](), err
+		return nil, err
 	}
-	return newFunc(gConn), nil
+	return &wrapperClient[T]{
+		conn:     gConn,
+		instance: newFunc(gConn),
+	}, nil
 }
 
 func LockID() string {
