@@ -12,8 +12,8 @@ import (
 )
 
 type Conn interface {
-	ReadOnly() (*grpc.ClientConn, error)
-	WriteOnly() (*grpc.ClientConn, error)
+	ReadOnly() (*GrpcPoolConn, error)
+	WriteOnly() (*GrpcPoolConn, error)
 	Close() error
 }
 
@@ -21,8 +21,8 @@ type clientConn struct {
 	state     atomic.Bool
 	mu        sync.Mutex
 	ctx       context.Context
-	writeOnly *grpc.ClientConn
-	readOnly  map[string]*grpc.ClientConn
+	writeOnly *GrpcPool
+	readOnly  map[string]*GrpcPool
 
 	endpoints []string
 }
@@ -49,7 +49,8 @@ func (c *clientConn) listenLeader() {
 	wg := sync.WaitGroup{}
 	wg.Add(len(c.readOnly))
 
-	finalTry := func(conn *grpc.ClientConn) {
+	finalTry := func(conn *GrpcPoolConn) {
+		defer conn.Release()
 		var (
 			err     error
 			monitor serverpb.RedQueen_LeaderMonitorClient
@@ -87,13 +88,17 @@ func (c *clientConn) listenLeader() {
 	}
 
 	for _, conn := range c.readOnly {
-		go finalTry(conn)
+		cc, err := conn.Alloc()
+		if err != nil {
+			panic(err)
+		}
+		go finalTry(cc)
 	}
 
 	wg.Wait()
 }
 
-func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
+func (c *clientConn) ReadOnly() (*GrpcPoolConn, error) {
 	size := len(c.readOnly)
 	if size == 0 {
 		return nil, errors.New("read-only not maintained")
@@ -104,21 +109,31 @@ func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
 		round, _ = rand.Int(rand.Reader, big.NewInt(int64(size)))
 	)
 
-	for _, conn := range c.readOnly {
+	for _, pool := range c.readOnly {
 		step++
-		if step == round.Int64() {
-			return conn, nil
+		if step != round.Int64() {
+			continue
 		}
+
+		cc, err := pool.Alloc()
+		if err != nil {
+			return nil, err
+		}
+		return cc, nil
 	}
 
 	return nil, errors.New("unexpected")
 }
 
-func (c *clientConn) WriteOnly() (*grpc.ClientConn, error) {
+func (c *clientConn) WriteOnly() (*GrpcPoolConn, error) {
 	if c.writeOnly == nil {
 		return nil, errors.New("write-only not maintained")
 	}
-	return c.writeOnly, nil
+	cc, err := c.writeOnly.Alloc()
+	if err != nil {
+		return nil, err
+	}
+	return cc, nil
 }
 
 func (c *clientConn) Close() error {
@@ -127,8 +142,10 @@ func (c *clientConn) Close() error {
 	}
 	c.state.Store(false)
 
-	c.writeOnly.Close()
-	c.writeOnly = nil
+	if c.writeOnly != nil {
+		c.writeOnly.Close()
+		c.writeOnly = nil
+	}
 
 	for key, conn := range c.readOnly {
 		conn.Close()
@@ -143,22 +160,22 @@ func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOpt
 		state:     atomic.Bool{},
 		ctx:       ctx,
 		writeOnly: nil,
-		readOnly:  make(map[string]*grpc.ClientConn),
+		readOnly:  make(map[string]*GrpcPool),
 		endpoints: endpoints,
 	}
 	cc.state.Store(true)
 
 	var (
 		err  error
-		conn *grpc.ClientConn
+		pool *GrpcPool
 	)
 
 	// init
 	for _, endpoint := range endpoints {
-		if conn, err = grpc.DialContext(ctx, endpoint, opts...); err != nil {
+		if pool, err = NewGrpcPool(ctx, endpoint, 16, opts...); err != nil {
 			return nil, err
 		}
-		cc.readOnly[endpoint] = conn
+		cc.readOnly[endpoint] = pool
 	}
 
 	// start listen
