@@ -1,6 +1,0 @@
-this is a memory-based storage engine, the data will not be stored permanently
-
-# term
-
-### Pod
-pod is the smallest storage unit of the engine

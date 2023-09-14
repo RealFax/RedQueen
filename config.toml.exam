@@ -29,10 +29,6 @@ backend = "nuts"
     name = "node-1"
     peer-addr = "127.0.0.1:4539"
 
-# state options
-# new, existing
-state = "new"
-
 token = "red-queen-cluster"
 
 [log]
