@@ -23,12 +23,6 @@ const (
 	DefaultStoreNutsRWMode     string = "fileio"
 )
 
-// -- cluster default value
-
-const (
-	DefaultClusterState = string(ClusterStateNew)
-)
-
 // -- log default value
 
 const (
