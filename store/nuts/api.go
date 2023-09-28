@@ -3,13 +3,12 @@ package nuts
 import (
 	"bytes"
 	"context"
+	"github.com/nutsdb/nutsdb"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sync"
 	"sync/atomic"
-
-	"github.com/nutsdb/nutsdb"
-	"github.com/pkg/errors"
 
 	"github.com/RealFax/RedQueen/store"
 )
@@ -55,11 +54,11 @@ func (s *storeAPI) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) erro
 	}
 
 	if err = fn(tx); err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return err
 	} else {
 		if err = tx.Commit(); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return err
 		}
 	}
@@ -71,13 +70,13 @@ func (s *storeAPI) Get(key []byte) (*store.Value, error) {
 	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
 		entry, err := tx.Get(s.namespace, key)
 		if err != nil {
-			if err == nutsdb.ErrKeyNotFound {
+			if errors.Is(err, nutsdb.ErrKeyNotFound) {
 				return store.ErrKeyNotFound
 			}
 			return err
 		}
 		val.Timestamp = entry.Meta.Timestamp
-		val.TTL = entry.Meta.TTL
+		val.TTL = ReadTTL(entry.Meta)
 		val.Key = entry.Key
 		val.Data = entry.Value
 		return nil
@@ -93,9 +92,9 @@ func (s *storeAPI) PrefixSearchScan(prefix []byte, reg string, offset, limit int
 		)
 
 		if reg != "" {
-			entries, _, err = tx.PrefixSearchScan(s.namespace, prefix, reg, offset, limit)
+			entries, err = tx.PrefixSearchScan(s.namespace, prefix, reg, offset, limit)
 		} else {
-			entries, _, err = tx.PrefixScan(s.namespace, prefix, offset, limit)
+			entries, err = tx.PrefixScan(s.namespace, prefix, offset, limit)
 		}
 		if err != nil {
 			return err
@@ -104,7 +103,7 @@ func (s *storeAPI) PrefixSearchScan(prefix []byte, reg string, offset, limit int
 		for _, entry := range entries {
 			val = append(val, &store.Value{
 				Timestamp: entry.Meta.Timestamp,
-				TTL:       entry.Meta.TTL,
+				TTL:       ReadTTL(entry.Meta),
 				Key:       entry.Key,
 				Data:      entry.Value,
 			})
@@ -199,7 +198,7 @@ func (s *storeAPI) Close() error {
 	if err != nil {
 		return err
 	}
-	s.Break(context.Background())
+	_ = s.Break(context.Background())
 	return db.Close()
 }
 
@@ -217,7 +216,7 @@ func (s *storeAPI) Snapshot() (io.Reader, error) {
 		return nil, errors.Wrap(err, "fail snapshot, break error")
 	}
 
-	db.Merge()
+	_ = db.Merge()
 	//if err = db.Merge(); err != nil {
 	//	return nil, errors.Wrap(err, "fail snapshot, merge error")
 	//}
@@ -256,7 +255,7 @@ func (s *storeAPI) Restore(src io.Reader) (err error) {
 	}
 
 	// close nuts db
-	s.db.Close()
+	_ = s.db.Close()
 
 	// clear new db files
 	if err = os.RemoveAll(s.dataDir); err != nil {
