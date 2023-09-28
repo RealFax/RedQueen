@@ -1,9 +1,9 @@
 package locker
 
 import (
+	"github.com/RealFax/RedQueen/internal/hack"
 	"time"
 
-	"github.com/RealFax/RedQueen/common/hack"
 	"github.com/RealFax/RedQueen/store"
 )
 

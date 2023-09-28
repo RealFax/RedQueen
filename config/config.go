@@ -3,10 +3,10 @@ package config
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+	"os"
+	"path"
 )
 
 type ServerEnv interface {
@@ -15,7 +15,9 @@ type ServerEnv interface {
 }
 
 type env struct {
-	firstRun   bool
+	firstRun     bool
+	initLockFile string
+
 	configFile string
 }
 
@@ -54,8 +56,6 @@ type ClusterBootstrap struct {
 }
 
 type Cluster struct {
-	// State enum: new, existing
-	State     EnumClusterState   `toml:"state"`
 	Token     string             `toml:"token"`
 	Bootstrap []ClusterBootstrap `toml:"bootstrap"`
 }
@@ -85,7 +85,24 @@ type Config struct {
 }
 
 func (c *Config) setupEnv() {
-	c.env.firstRun = c.Cluster.State == ClusterStateNew
+	c.env.initLockFile = path.Join(c.Node.DataDir, ".init.lock")
+
+	// write init lock
+	if _, err := os.Stat(c.env.initLockFile); os.IsNotExist(err) {
+		c.env.firstRun = true
+
+		if err = os.MkdirAll(path.Clean(c.Node.DataDir), os.ModePerm); err != nil {
+			panic("Setup config error:" + err.Error())
+		}
+
+		f, err := os.OpenFile(c.env.initLockFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		if err != nil {
+			panic("Setup config error:" + err.Error())
+		}
+		defer f.Close()
+		_, _ = f.WriteString("LOCK")
+	}
+
 }
 
 func (c *Config) Env() ServerEnv {
@@ -127,7 +144,6 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
 
 	// main config::cluster
-	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "status of the cluster at startup")
 	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
@@ -168,7 +184,6 @@ func bindServerFromEnv(cfg *Config) {
 	BindEnvVar(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "RQ_NUTS_RW_MODE")
 
 	// main config::cluster
-	BindEnvVar(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "RQ_CLUSTER_STATE")
 	EnvStringVar(&cfg.Cluster.Token, "RQ_CLUSTER_TOKEN", "")
 
 	// main config::cluster::bootstrap(s)

@@ -19,7 +19,7 @@ func (c *appendCluster) exec() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	call, err := client.New(ctx, endpoints, true)
+	call, err := client.New(ctx, endpoints)
 	if err != nil {
 		return err
 	}
