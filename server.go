@@ -3,12 +3,13 @@ package red
 import (
 	"bytes"
 	"context"
+	"github.com/pkg/errors"
+
 	"net"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/raft"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
@@ -61,14 +62,14 @@ func (s *Server) namespace(namespace *string) (store.Namespace, error) {
 
 func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) error {
 	if err := s.logApplyer.Apply(&ctx, p, timeout); err != nil {
-		if err == ErrApplyLogTimeTravelDone || err == ErrApplyLogDone {
+		if errors.Is(err, ErrApplyLogTimeTravelDone) || errors.Is(err, ErrApplyLogDone) {
 			return nil
 		}
 		return err
 	}
 	// waiting response
 	<-ctx.Done()
-	if context.Cause(ctx) == ErrApplyLogDone {
+	if errors.Is(context.Cause(ctx), ErrApplyLogDone) {
 		return nil
 	}
 

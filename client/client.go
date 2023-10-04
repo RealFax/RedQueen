@@ -10,14 +10,12 @@ type Client struct {
 	KvClient
 	LockerClient
 
-	conn       Conn
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-	endpoints  []string
+	conn      Conn
+	ctx       context.Context
+	endpoints []string
 }
 
 func (c *Client) Close() error {
-	c.cancelFunc()
 	return c.conn.Close()
 }
 
@@ -28,8 +26,6 @@ func New(ctx context.Context, endpoints []string, opts ...grpc.DialOption) (*Cli
 			endpoints: endpoints,
 		}
 	)
-
-	client.ctx, client.cancelFunc = context.WithCancel(ctx)
 
 	if client.conn, err = NewClientConn(ctx, endpoints, opts...); err != nil {
 		return nil, err

@@ -5,10 +5,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func ignoreBytes(s []byte) bool {
-	return s == nil
-}
-
 type wrapperClient[T any] struct {
 	conn     *GrpcPoolConn
 	instance T
@@ -40,4 +36,9 @@ func LockID() string {
 
 func Namespace(s string) *string {
 	return &s
+}
+
+func NewLeaderMonitorReceiver() *chan bool {
+	c := make(chan bool, 1)
+	return &c
 }

@@ -38,8 +38,8 @@ func (c *kvClient) Set(ctx context.Context, key, value []byte, ttl uint32, names
 		Key:         key,
 		Value:       value,
 		Ttl:         ttl,
-		IgnoreValue: ignoreBytes(key),
-		IgnoreTtl:   ignoreBytes(value),
+		IgnoreValue: value == nil,
+		IgnoreTtl:   ttl == 0,
 		Namespace:   namespace,
 	})
 	return err
@@ -106,8 +106,8 @@ func (c *kvClient) TrySet(ctx context.Context, key, value []byte, ttl uint32, na
 		Key:         key,
 		Value:       value,
 		Ttl:         ttl,
-		IgnoreValue: ignoreBytes(key),
-		IgnoreTtl:   ignoreBytes(value),
+		IgnoreValue: value == nil,
+		IgnoreTtl:   ttl == 0,
 		Namespace:   namespace,
 	})
 	return err

@@ -143,12 +143,12 @@ func (c *clientConn) Close() error {
 	c.state.Store(false)
 
 	if c.writeOnly != nil {
-		c.writeOnly.Close()
+		_ = c.writeOnly.Close()
 		c.writeOnly = nil
 	}
 
 	for key, conn := range c.readOnly {
-		conn.Close()
+		_ = conn.Close()
 		delete(c.readOnly, key)
 	}
 
@@ -172,7 +172,12 @@ func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOpt
 
 	// init
 	for _, endpoint := range endpoints {
-		if pool, err = NewGrpcPool(ctx, endpoint, 16, opts...); err != nil {
+		if pool, err = NewGrpcPool(
+			ctx,
+			endpoint,
+			int(atomic.LoadInt64(&grpcPoolSize)),
+			opts...,
+		); err != nil {
 			return nil, err
 		}
 		cc.readOnly[endpoint] = pool
