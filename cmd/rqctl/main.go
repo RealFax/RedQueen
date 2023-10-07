@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/netip"
+	"os"
+	"strings"
+	"syscall"
+
 	red "github.com/RealFax/RedQueen"
 	"github.com/RealFax/RedQueen/client"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net/netip"
-	"os"
-	"strings"
-	"syscall"
 )
 
 const (
@@ -28,7 +29,7 @@ var (
 func dialRQ() error {
 	endpointString, ok := syscall.Getenv("RQ_ENDPOINTS")
 	if !ok {
-		fmt.Print(helpText)
+		fmt.Println(helpText)
 		return errors.New("can not read endpoints from environment variable RQ_ENDPOINTS")
 	}
 

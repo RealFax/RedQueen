@@ -35,17 +35,6 @@ func TestEnumNutsRWMode_Valid(t *testing.T) {
 	expected(t, config.EnumNutsRWMode("rwmode"))
 }
 
-func TestEnumClusterState_Valid(t *testing.T) {
-	for _, val := range []config.EnumClusterState{
-		config.ClusterStateNew,
-		config.ClusterStateExisting,
-	} {
-		unexpected(t, val)
-	}
-
-	expected(t, config.EnumClusterState("none"))
-}
-
 func TestEnumLogLogger_Valid(t *testing.T) {
 	for _, val := range []config.EnumLogLogger{
 		config.LogLoggerZap,

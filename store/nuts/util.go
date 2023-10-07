@@ -4,12 +4,13 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/base64"
-	"github.com/nutsdb/nutsdb"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/nutsdb/nutsdb"
 )
 
 // WatchKey
@@ -87,5 +88,5 @@ func BackupReader(dst string, src io.Reader) error {
 }
 
 func ReadTTL(md *nutsdb.MetaData) uint32 {
-	return uint32(md.Timestamp + uint64(md.TTL) - uint64(time.Now().Unix()))
+	return uint32((md.Timestamp / 1000) + uint64(md.TTL) - uint64(time.Now().Unix()))
 }

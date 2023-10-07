@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"time"
+	"unicode/utf8"
+
 	"github.com/RealFax/RedQueen/client"
 	"github.com/RealFax/RedQueen/internal/hack"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	"log"
-	"time"
-	"unicode/utf8"
 )
 
 func Pointer[T comparable](in T) *T {
@@ -197,10 +198,10 @@ func RPCWatchPrefix(c *cli.Context) error {
 		opts = append(opts, client.WatchWithNamespace(Pointer(namespace)))
 	}
 
-	watcher := client.NewWatcher(hack.String2Bytes(prefix))
+	watcher := client.NewWatcher(hack.String2Bytes(prefix), opts...)
 	go func() {
-		if err := invoker.Watch(c.Context, watcher); err != nil {
-			log.Fatal("[-] client watch error:", err)
+		if err := invoker.WatchPrefix(c.Context, watcher); err != nil {
+			log.Fatal("[-] client watch error: ", err)
 		}
 	}()
 
@@ -225,7 +226,7 @@ func RPCWatchPrefix(c *cli.Context) error {
 
 			log.Printf("[+] TTL: %d, Timestamp: %s, Value: %s",
 				val.TTL,
-				time.Unix(val.Timestamp, 0),
+				time.UnixMilli(val.Timestamp),
 				out,
 			)
 		}
