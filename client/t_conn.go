@@ -3,22 +3,17 @@ package client
 import (
 	"context"
 	"crypto/rand"
+	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"math/big"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/keepalive"
-
-	"github.com/RealFax/RedQueen/api/serverpb"
 )
 
 type Conn interface {
-	ReadOnly() (*grpc.ClientConn, error)
-	WriteOnly() (*grpc.ClientConn, error)
+	ReadOnly() (*GrpcPoolConn, error)
+	WriteOnly() (*GrpcPoolConn, error)
 	Close() error
 }
 
@@ -26,8 +21,8 @@ type clientConn struct {
 	state     atomic.Bool
 	mu        sync.Mutex
 	ctx       context.Context
-	writeOnly *grpc.ClientConn
-	readOnly  map[string]*grpc.ClientConn
+	writeOnly *GrpcPool
+	readOnly  map[string]*GrpcPool
 
 	endpoints []string
 }
@@ -51,7 +46,11 @@ func (c *clientConn) swapLeaderConn(new string) error {
 }
 
 func (c *clientConn) listenLeader() {
-	finalTry := func(conn *grpc.ClientConn) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(c.readOnly))
+
+	finalTry := func(conn *GrpcPoolConn) {
+		defer conn.Release()
 		var (
 			err     error
 			monitor serverpb.RedQueen_LeaderMonitorClient
@@ -65,6 +64,7 @@ func (c *clientConn) listenLeader() {
 			if xResp.State == serverpb.RaftState_leader {
 				_ = c.swapLeaderConn(conn.Target())
 			}
+			wg.Done()
 		}
 
 		for {
@@ -88,11 +88,17 @@ func (c *clientConn) listenLeader() {
 	}
 
 	for _, conn := range c.readOnly {
-		go finalTry(conn)
+		cc, err := conn.Alloc()
+		if err != nil {
+			panic(err)
+		}
+		go finalTry(cc)
 	}
+
+	wg.Wait()
 }
 
-func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
+func (c *clientConn) ReadOnly() (*GrpcPoolConn, error) {
 	size := len(c.readOnly)
 	if size == 0 {
 		return nil, errors.New("read-only not maintained")
@@ -103,21 +109,31 @@ func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
 		round, _ = rand.Int(rand.Reader, big.NewInt(int64(size)))
 	)
 
-	for _, conn := range c.readOnly {
+	for _, pool := range c.readOnly {
 		step++
-		if step == round.Int64() {
-			return conn, nil
+		if step != round.Int64() {
+			continue
 		}
+
+		cc, err := pool.Alloc()
+		if err != nil {
+			return nil, err
+		}
+		return cc, nil
 	}
 
 	return nil, errors.New("unexpected")
 }
 
-func (c *clientConn) WriteOnly() (*grpc.ClientConn, error) {
+func (c *clientConn) WriteOnly() (*GrpcPoolConn, error) {
 	if c.writeOnly == nil {
 		return nil, errors.New("write-only not maintained")
 	}
-	return c.writeOnly, nil
+	cc, err := c.writeOnly.Alloc()
+	if err != nil {
+		return nil, err
+	}
+	return cc, nil
 }
 
 func (c *clientConn) Close() error {
@@ -126,50 +142,45 @@ func (c *clientConn) Close() error {
 	}
 	c.state.Store(false)
 
-	c.writeOnly.Close()
-	c.writeOnly = nil
+	if c.writeOnly != nil {
+		_ = c.writeOnly.Close()
+		c.writeOnly = nil
+	}
 
 	for key, conn := range c.readOnly {
-		conn.Close()
+		_ = conn.Close()
 		delete(c.readOnly, key)
 	}
 
 	return nil
 }
 
-func NewClientConn(ctx context.Context, endpoints []string, syncConn bool) (Conn, error) {
+func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOption) (Conn, error) {
 	cc := &clientConn{
 		state:     atomic.Bool{},
 		ctx:       ctx,
 		writeOnly: nil,
-		readOnly:  make(map[string]*grpc.ClientConn),
+		readOnly:  make(map[string]*GrpcPool),
 		endpoints: endpoints,
 	}
 	cc.state.Store(true)
 
 	var (
 		err  error
-		conn *grpc.ClientConn
-		opts = []grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithKeepaliveParams(keepalive.ClientParameters{
-				Time:                time.Second * 3,
-				Timeout:             time.Millisecond * 100,
-				PermitWithoutStream: true,
-			}),
-		}
+		pool *GrpcPool
 	)
-
-	if syncConn {
-		opts = append(opts, grpc.WithBlock())
-	}
 
 	// init
 	for _, endpoint := range endpoints {
-		if conn, err = grpc.DialContext(ctx, endpoint, opts...); err != nil {
+		if pool, err = NewGrpcPool(
+			ctx,
+			endpoint,
+			int(atomic.LoadInt64(&grpcPoolSize)),
+			opts...,
+		); err != nil {
 			return nil, err
 		}
-		cc.readOnly[endpoint] = conn
+		cc.readOnly[endpoint] = pool
 	}
 
 	// start listen

@@ -1,11 +1,12 @@
 package client
 
 import (
-	"github.com/pkg/errors"
 	"sync/atomic"
+
+	"github.com/pkg/errors"
 )
 
-const DefaultWatchBufSize uint32 = 4
+const DefaultWatchBufSize uint32 = 8
 
 var (
 	ErrWatcherClosed = errors.New("watcher has closed")
@@ -14,16 +15,21 @@ var (
 type WatchValue struct {
 	seq       uint64
 	Timestamp int64
-	Data      []byte
+	TTL       uint32
+	Key       []byte
+	Value     []byte
 }
 
 type Watcher struct {
 	close        atomic.Bool
 	ignoreErrors bool
-	bufSize      uint32
-	key          []byte
-	namespace    *string
-	ch           chan *WatchValue
+	prefixWatch  bool
+
+	bufSize uint32
+	// if prefixWatch equal true, store prefix
+	key       []byte
+	namespace *string
+	ch        chan *WatchValue
 }
 
 func (w *Watcher) Close() error {
@@ -44,10 +50,9 @@ func (w *Watcher) Notify() (chan *WatchValue, error) {
 
 type WatcherOption func(*Watcher)
 
-func NewWatcher(key []byte, ignoreErrors bool, opts ...WatcherOption) *Watcher {
+func NewWatcher(key []byte, opts ...WatcherOption) *Watcher {
 	w := &Watcher{
-		ignoreErrors: ignoreErrors,
-		key:          key,
+		key: key,
 	}
 
 	for _, opt := range opts {
@@ -57,9 +62,22 @@ func NewWatcher(key []byte, ignoreErrors bool, opts ...WatcherOption) *Watcher {
 	if w.bufSize == 0 {
 		w.bufSize = DefaultWatchBufSize
 	}
+
 	w.ch = make(chan *WatchValue, w.bufSize)
 
 	return w
+}
+
+func WatchWithPrefix() WatcherOption {
+	return func(w *Watcher) {
+		w.prefixWatch = true
+	}
+}
+
+func WatchWithIgnoreErrors() WatcherOption {
+	return func(w *Watcher) {
+		w.ignoreErrors = true
+	}
 }
 
 func WatchWithNamespace(namespace *string) WatcherOption {

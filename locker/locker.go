@@ -1,8 +1,9 @@
 package locker
 
 import (
-	"github.com/RealFax/RedQueen/store"
 	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 const (

@@ -2,11 +2,11 @@ package config
 
 import (
 	"flag"
-
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 	"os"
+	"path"
 )
 
 type ServerEnv interface {
@@ -15,7 +15,9 @@ type ServerEnv interface {
 }
 
 type env struct {
-	firstRun   bool
+	firstRun     bool
+	initLockFile string
+
 	configFile string
 }
 
@@ -33,6 +35,7 @@ type Node struct {
 	ListenPeerAddr   string `toml:"listen-peer-addr"`
 	ListenClientAddr string `toml:"listen-client-addr"`
 	MaxSnapshots     uint32 `toml:"max-snapshots"`
+	RequestsMerged   bool   `toml:"requests-merged"`
 }
 
 type StoreNuts struct {
@@ -53,8 +56,6 @@ type ClusterBootstrap struct {
 }
 
 type Cluster struct {
-	// State enum: new, existing
-	State     EnumClusterState   `toml:"state"`
 	Token     string             `toml:"token"`
 	Bootstrap []ClusterBootstrap `toml:"bootstrap"`
 }
@@ -84,7 +85,24 @@ type Config struct {
 }
 
 func (c *Config) setupEnv() {
-	c.env.firstRun = c.Cluster.State == ClusterStateNew
+	c.env.initLockFile = path.Join(c.Node.DataDir, ".init.lock")
+
+	// write init lock
+	if _, err := os.Stat(c.env.initLockFile); os.IsNotExist(err) {
+		c.env.firstRun = true
+
+		if err = os.MkdirAll(path.Clean(c.Node.DataDir), os.ModePerm); err != nil {
+			panic("Setup config error:" + err.Error())
+		}
+
+		f, err := os.OpenFile(c.env.initLockFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		if err != nil {
+			panic("Setup config error:" + err.Error())
+		}
+		defer f.Close()
+		_, _ = f.WriteString("LOCK")
+	}
+
 }
 
 func (c *Config) Env() ServerEnv {
@@ -103,7 +121,7 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs := flag.NewFlagSet("server", flag.ExitOnError)
 
 	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), "Usage of RedQueen:")
+		fmt.Fprint(fs.Output(), serverUsage)
 		fs.PrintDefaults()
 	}
 
@@ -115,7 +133,7 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
 	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
 	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
-
+	fs.BoolVar(&cfg.Node.RequestsMerged, "requests-merged", DefaultNodeRequestsMerged, "enable raft apply log requests merged")
 	// main config::store
 	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
@@ -126,7 +144,6 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	fs.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
 
 	// main config::cluster
-	fs.Var(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "cluster-state", "status of the cluster at startup")
 	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
@@ -155,6 +172,7 @@ func bindServerFromEnv(cfg *Config) {
 	EnvStringVar(&cfg.Node.ListenPeerAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
 	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_CLIENT_ADDR", DefaultNodeListenClientAddr)
 	BindEnvVar(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "RQ_MAX_SNAPSHOTS")
+	EnvBoolVar(&cfg.Node.RequestsMerged, "RQ_REQUESTS_MERGED", DefaultNodeRequestsMerged)
 
 	// main config::store
 	BindEnvVar(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "RQ_STORE_BACKEND")
@@ -166,7 +184,6 @@ func bindServerFromEnv(cfg *Config) {
 	BindEnvVar(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "RQ_NUTS_RW_MODE")
 
 	// main config::cluster
-	BindEnvVar(newValidatorStringValue[EnumClusterState](DefaultClusterState, &cfg.Cluster.State), "RQ_CLUSTER_STATE")
 	EnvStringVar(&cfg.Cluster.Token, "RQ_CLUSTER_TOKEN", "")
 
 	// main config::cluster::bootstrap(s)
@@ -209,7 +226,7 @@ func ReadFromArgs(args ...string) (*Config, error) {
 			return nil, err
 		}
 	default:
-		fmt.Print(usage)
+		fmt.Fprint(os.Stderr, usage)
 		return nil, errors.New("unknown subcommand")
 	}
 

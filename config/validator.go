@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type Validator interface {
@@ -40,22 +41,6 @@ func (m EnumNutsRWMode) Valid() error {
 	}
 }
 
-type EnumClusterState string
-
-const (
-	ClusterStateNew      EnumClusterState = "new"
-	ClusterStateExisting EnumClusterState = "existing"
-)
-
-func (s EnumClusterState) Valid() error {
-	switch s {
-	case ClusterStateNew, ClusterStateExisting:
-		return nil
-	default:
-		return errors.New("unknown cluster state type")
-	}
-}
-
 type EnumLogLogger string
 
 const (
@@ -83,5 +68,5 @@ func (p FilePath) Valid() error {
 }
 
 type stringValidator interface {
-	EnumStoreBackend | EnumNutsRWMode | EnumClusterState | EnumLogLogger | FilePath
+	EnumStoreBackend | EnumNutsRWMode | EnumLogLogger | FilePath
 }

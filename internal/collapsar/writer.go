@@ -2,10 +2,11 @@ package collapsar
 
 import (
 	"encoding/gob"
-	"github.com/pkg/errors"
 	"io"
 	"sync"
 	"sync/atomic"
+
+	"github.com/pkg/errors"
 )
 
 type writer struct {
@@ -24,6 +25,9 @@ func (a *writer) onFullTrigger() {
 }
 
 func (a *writer) Encode(w io.Writer) error {
+	if atomic.LoadUint32(&a.state) == 0 {
+		return errors.New("collapsar writer has closed")
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return gob.NewEncoder(w).Encode(Binary{
@@ -33,6 +37,9 @@ func (a *writer) Encode(w io.Writer) error {
 }
 
 func (a *writer) Add(entry []byte) error {
+	if atomic.LoadUint32(&a.state) == 0 {
+		return errors.New("collapsar writer has closed")
+	}
 	if atomic.LoadInt32(&a.max) < atomic.LoadInt32(&a.size) {
 		return errors.New("reach the max")
 	}

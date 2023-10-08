@@ -5,26 +5,29 @@ import (
 	"google.golang.org/grpc"
 )
 
-func ignoreBytes(s []byte) bool {
-	return s == nil
+type wrapperClient[T any] struct {
+	conn     *GrpcPoolConn
+	instance T
 }
 
-func newEmptyValue[T any]() T {
-	var v T
-	return v
-}
-
-func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientConnInterface) T) (T, error) {
-	gConn, err := func() (*grpc.ClientConn, error) {
+func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientConnInterface) T) (*wrapperClient[T], error) {
+	gConn, err := func() (*GrpcPoolConn, error) {
 		if writeable {
 			return conn.WriteOnly()
 		}
-		return conn.ReadOnly()
+		r, err := conn.ReadOnly()
+		if err != nil {
+			return conn.WriteOnly()
+		}
+		return r, nil
 	}()
 	if err != nil {
-		return newEmptyValue[T](), err
+		return nil, err
 	}
-	return newFunc(gConn), nil
+	return &wrapperClient[T]{
+		conn:     gConn,
+		instance: newFunc(gConn),
+	}, nil
 }
 
 func LockID() string {
@@ -33,4 +36,9 @@ func LockID() string {
 
 func Namespace(s string) *string {
 	return &s
+}
+
+func NewLeaderMonitorReceiver() *chan bool {
+	c := make(chan bool, 1)
+	return &c
 }

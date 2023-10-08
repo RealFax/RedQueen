@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"github.com/pkg/errors"
+
 	"github.com/RealFax/RedQueen/api/serverpb"
 )
 
@@ -17,6 +19,7 @@ type KvClient interface {
 	TrySet(ctx context.Context, key, value []byte, ttl uint32, namespace *string) error
 	Delete(ctx context.Context, key []byte, namespace *string) error
 	Watch(ctx context.Context, watcher *Watcher) error
+	WatchPrefix(ctx context.Context, watcher *Watcher) error
 }
 
 type kvClient struct {
@@ -29,13 +32,14 @@ func (c *kvClient) Set(ctx context.Context, key, value []byte, ttl uint32, names
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
-	_, err = client.Set(ctx, &serverpb.SetRequest{
+	_, err = client.instance.Set(ctx, &serverpb.SetRequest{
 		Key:         key,
 		Value:       value,
 		Ttl:         ttl,
-		IgnoreValue: ignoreBytes(key),
-		IgnoreTtl:   ignoreBytes(value),
+		IgnoreValue: value == nil,
+		IgnoreTtl:   ttl == 0,
 		Namespace:   namespace,
 	})
 	return err
@@ -46,8 +50,9 @@ func (c *kvClient) Get(ctx context.Context, key []byte, namespace *string) (*Val
 	if err != nil {
 		return nil, err
 	}
+	defer client.conn.Release()
 
-	resp, err := client.Get(ctx, &serverpb.GetRequest{
+	resp, err := client.instance.Get(ctx, &serverpb.GetRequest{
 		Key:       key,
 		Namespace: namespace,
 	})
@@ -65,8 +70,9 @@ func (c *kvClient) PrefixScan(ctx context.Context, prefix []byte, offset, limit 
 	if err != nil {
 		return nil, err
 	}
+	defer client.conn.Release()
 
-	resp, err := client.PrefixScan(ctx, &serverpb.PrefixScanRequest{
+	resp, err := client.instance.PrefixScan(ctx, &serverpb.PrefixScanRequest{
 		Prefix:    prefix,
 		Offset:    offset,
 		Limit:     limit,
@@ -78,14 +84,14 @@ func (c *kvClient) PrefixScan(ctx context.Context, prefix []byte, offset, limit 
 	}
 
 	return func() []*Value {
-		sres := make([]*Value, len(resp.Result))
+		values := make([]*Value, len(resp.Result))
 		for i, result := range resp.Result {
-			sres[i] = &Value{
+			values[i] = &Value{
 				Data: result.Value,
 				TTL:  result.Ttl,
 			}
 		}
-		return sres
+		return values
 	}(), err
 }
 
@@ -94,13 +100,14 @@ func (c *kvClient) TrySet(ctx context.Context, key, value []byte, ttl uint32, na
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
-	_, err = client.TrySet(ctx, &serverpb.SetRequest{
+	_, err = client.instance.TrySet(ctx, &serverpb.SetRequest{
 		Key:         key,
 		Value:       value,
 		Ttl:         ttl,
-		IgnoreValue: ignoreBytes(key),
-		IgnoreTtl:   ignoreBytes(value),
+		IgnoreValue: value == nil,
+		IgnoreTtl:   ttl == 0,
 		Namespace:   namespace,
 	})
 	return err
@@ -111,8 +118,9 @@ func (c *kvClient) Delete(ctx context.Context, key []byte, namespace *string) er
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
-	_, err = client.Delete(ctx, &serverpb.DeleteRequest{
+	_, err = client.instance.Delete(ctx, &serverpb.DeleteRequest{
 		Key:       key,
 		Namespace: namespace,
 	})
@@ -120,16 +128,17 @@ func (c *kvClient) Delete(ctx context.Context, key []byte, namespace *string) er
 }
 
 func (c *kvClient) Watch(ctx context.Context, watcher *Watcher) error {
+	if watcher.prefixWatch {
+		return errors.New("watcher should be is normal watcher")
+	}
+
 	client, err := newClientCall[serverpb.KVClient](false, c.conn, serverpb.NewKVClient)
 	if err != nil {
 		return err
 	}
+	defer client.conn.Release()
 
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithCancel(ctx)
-	defer cancel()
-
-	watch, err := client.Watch(ctx, &serverpb.WatchRequest{
+	watch, err := client.instance.Watch(ctx, &serverpb.WatchRequest{
 		Key:          watcher.key,
 		IgnoreErrors: watcher.ignoreErrors,
 		Namespace:    watcher.namespace,
@@ -159,10 +168,58 @@ func (c *kvClient) Watch(ctx context.Context, watcher *Watcher) error {
 		watcher.ch <- &WatchValue{
 			seq:       resp.UpdateSeq,
 			Timestamp: resp.Timestamp,
-			Data:      resp.Data,
+			TTL:       resp.Ttl,
+			Key:       resp.Key,
+			Value:     resp.Value,
 		}
 	}
+}
 
+func (c *kvClient) WatchPrefix(ctx context.Context, watcher *Watcher) error {
+	if !watcher.prefixWatch {
+		return errors.New("watcher should be is prefix watcher")
+	}
+
+	client, err := newClientCall[serverpb.KVClient](false, c.conn, serverpb.NewKVClient)
+	if err != nil {
+		return err
+	}
+	defer client.conn.Release()
+
+	watch, err := client.instance.WatchPrefix(ctx, &serverpb.WatchPrefixRequest{
+		Prefix:    watcher.key,
+		Namespace: watcher.namespace,
+		BufSize: func() *uint32 {
+			if watcher.bufSize != 0 {
+				return &watcher.bufSize
+			}
+			dup := DefaultWatchBufSize
+			return &dup
+		}(),
+	})
+	if err != nil {
+		return err
+	}
+
+	defer watcher.Close()
+	var resp *serverpb.WatchResponse
+
+	for {
+		if resp, err = watch.Recv(); err != nil {
+			return err
+		}
+		if watcher.close.Load() {
+			return ErrWatcherClosed
+		}
+
+		watcher.ch <- &WatchValue{
+			seq:       resp.UpdateSeq,
+			Timestamp: resp.Timestamp,
+			TTL:       resp.Ttl,
+			Key:       resp.Key,
+			Value:     resp.Value,
+		}
+	}
 }
 
 func newKvClient(ctx context.Context, conn Conn) KvClient {

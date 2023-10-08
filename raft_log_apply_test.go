@@ -3,15 +3,17 @@ package red_test
 import (
 	"bytes"
 	"context"
-	red "github.com/RealFax/RedQueen"
-	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/internal/collapsar"
-	"github.com/hashicorp/raft"
-	"google.golang.org/protobuf/proto"
 	"io"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/raft"
+	"google.golang.org/protobuf/proto"
+
+	red "github.com/RealFax/RedQueen"
+	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 var raftLogPayloadMessage = &serverpb.RaftLogPayload{
@@ -25,7 +27,7 @@ func init() {
 }
 
 func TestRaftLogPayloadKey(t *testing.T) {
-	red.RaftLogPayloadKey(raftLogPayloadMessage)
+	t.Logf("Payload key: %d", red.RaftLogPayloadKey(raftLogPayloadMessage))
 }
 
 func TestRaftMultipleLogApply_Apply(t *testing.T) {

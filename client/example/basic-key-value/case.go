@@ -1,25 +1,30 @@
-package basic_key_value
+package main
 
 import (
 	"context"
-	"github.com/RealFax/RedQueen/client"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/RealFax/RedQueen/client"
 )
 
 func main() {
 	c, err := client.New(context.Background(), []string{
-		"127.0.0.1:2540",
-		"127.0.0.1:3540",
-		"127.0.0.1:4540",
-	}, false)
+		//"127.0.0.1:3230",
+		//"127.0.0.1:4230",
+		"127.0.0.1:5230",
+	}, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Close()
 
 	// watch case
-	watcher := client.NewWatcher([]byte("Key1"), true)
-	defer watcher.Close()
+	watcher := client.NewWatcher([]byte("Key1"))
 	go func() {
 		if wErr := c.Watch(context.Background(), watcher); err != nil {
 			log.Fatal("client watch error:", wErr)
@@ -32,7 +37,11 @@ func main() {
 		}
 		for {
 			val := <-notify
-			log.Printf("[Watch] Value: %s, Timestamp: %d", val.Data, val.Timestamp)
+			if val.Value == nil {
+				log.Println("[Watch] key has deleted")
+				return
+			}
+			log.Printf("[Watch] Value: %s, TTL: %d, Timestamp: %d", val.Value, val.TTL, val.Timestamp)
 		}
 	}()
 
@@ -55,4 +64,20 @@ func main() {
 		log.Fatal("client delete error:", err)
 	}
 
+	const maxWorker = 100
+	off := int32(0)
+
+	log.Printf("Starting benchmark...\nWorker: %d\n", maxWorker)
+	b := sync.WaitGroup{}
+	start := time.Now()
+	for i := 0; i < maxWorker; i++ {
+		b.Add(1)
+		go func() {
+			defer b.Done()
+			c.Set(context.Background(), []byte("Key1"), []byte("Value1"), 60, nil)
+			log.Println(atomic.AddInt32(&off, 1))
+		}()
+	}
+	b.Wait()
+	log.Printf("Using: %s", time.Since(start).String())
 }

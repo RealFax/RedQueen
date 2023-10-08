@@ -50,8 +50,8 @@ jobs:
 
       - name: Making RedQueen docker image
         run: |
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqd ./_bin/RedQueenServer
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqctl ./_bin/RedQueenUtil
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqd ./cmd/rqd
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqctl ./cmd/rqctl
           cp ./Dockerfile ./release/Dockerfile
 
       # docker hub credentials

@@ -1,24 +1,21 @@
 package nuts
 
 import (
-	"encoding/json"
-	"github.com/RealFax/RedQueen/store"
-	"github.com/RealFax/RedQueen/utils"
-	"github.com/google/uuid"
+	"bytes"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
 const WatcherNotifyValueSize = 1024
 
-type WatcherMetadata map[string]map[uint64]map[string]int
-
-func (m *WatcherMetadata) String() string {
-	out, _ := json.MarshalIndent(m, "", "\t")
-	return utils.Bytes2String(out)
-}
-
 type WatcherNotify struct {
+	state         atomic.Bool
 	unwatchedFunc func()
 	Values        chan *store.WatchValue
 	UUID          string
@@ -29,55 +26,55 @@ func (n *WatcherNotify) Notify() chan *store.WatchValue {
 }
 
 func (n *WatcherNotify) Close() error {
+	if !n.state.Load() {
+		return errors.New("watcher notify has closed")
+	}
+	n.state.Store(false)
 	n.unwatchedFunc()
 	close(n.Values)
 	return nil
 }
 
 type WatcherChannel struct {
-	mu         sync.Mutex
-	Seq        uint64
-	LastUpdate int64
-	Value      *[]byte
-	Notify     sync.Map // map[string]*WatcherNotify
-}
-
-func (c *WatcherChannel) Get() map[string]int {
-	m := make(map[string]int)
-	c.Notify.Range(func(key, value any) bool {
-		m[key.(string)] = len(value.(*WatcherNotify).Values)
-		return true
-	})
-	return m
+	mu          sync.Mutex
+	PrefixWatch bool
+	Seq         uint64
+	LastUpdate  int64
+	Value       *[]byte
+	Prefix      []byte
+	Notify      sync.Map // map[string]*WatcherNotify
 }
 
 func (c *WatcherChannel) AddNotify(dest *WatcherNotify) {
+	dest.state = atomic.Bool{}
+	dest.state.Store(true)
 	dest.unwatchedFunc = func() {
-		c.Notify.Range(func(key, _ any) bool {
-			if key.(string) == dest.UUID {
-				c.Notify.Delete(key)
-				return false
-			}
-			return true
-		})
+		c.Notify.Delete(dest.UUID)
 	}
 	c.Notify.Store(dest.UUID, dest)
 }
 
-func (c *WatcherChannel) UpdateValue(val *[]byte) {
-	var (
-		seq       uint64
-		timestamp int64
-	)
+func (c *WatcherChannel) UpdateValue(key []byte, value *[]byte, ttl uint32) {
+	if c.PrefixWatch && !bytes.HasPrefix(key, c.Prefix) {
+		return
+	}
 
 	c.mu.Lock()
 	c.Seq++
 	c.LastUpdate = time.Now().UnixMilli()
-	c.Value = val
+	c.Value = value
 
-	seq = c.Seq
-	timestamp = c.LastUpdate
+	seq := c.Seq
+	timestamp := c.LastUpdate
 	c.mu.Unlock()
+
+	watchValue := &store.WatchValue{
+		Seq:       seq,
+		Timestamp: timestamp,
+		TTL:       ttl,
+		Key:       key,
+		Value:     value,
+	}
 
 	c.Notify.Range(func(_, value any) bool {
 		dest := value.(*WatcherNotify)
@@ -85,27 +82,15 @@ func (c *WatcherChannel) UpdateValue(val *[]byte) {
 		if len(dest.Values) == cap(dest.Values) {
 			return true
 		}
-		dest.Values <- &store.WatchValue{
-			Seq:       seq,
-			Timestamp: timestamp,
-			Data:      val,
-		}
+		dest.Values <- watchValue
 		return true
 	})
 }
 
 type WatcherChild struct {
-	Namespace string
-	Channels  sync.Map // map[uint64]*WatcherChannel
-}
-
-func (c *WatcherChild) Get() map[uint64]map[string]int {
-	m := make(map[uint64]map[string]int)
-	c.Channels.Range(func(key, value any) bool {
-		m[key.(uint64)] = value.(*WatcherChannel).Get()
-		return true
-	})
-	return m
+	Namespace      string
+	Channels       sync.Map // map[uint64]*WatcherChannel
+	PrefixChannels sync.Map // map[string]*WatcherChannel
 }
 
 func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
@@ -130,34 +115,51 @@ func (c *WatcherChild) Watch(key []byte) *WatcherNotify {
 	return notify
 }
 
-func (c *WatcherChild) Update(key, value []byte) {
-	watchKey := WatchKey(key)
+func (c *WatcherChild) WatchPrefix(prefix []byte) *WatcherNotify {
+	prefixKey := PrefixKey(prefix)
 
+	channel, ok := c.PrefixChannels.Load(prefixKey)
+	if !ok {
+		// init prefix watcher channel
+		channel = &WatcherChannel{PrefixWatch: true, Prefix: prefix}
+		c.PrefixChannels.Store(prefixKey, channel)
+	}
+
+	// create prefix watcher notify
+	notify := &WatcherNotify{
+		Values: make(chan *store.WatchValue, WatcherNotifyValueSize),
+		UUID:   uuid.New().String(),
+	}
+
+	// setup prefix watcher notify
+	channel.(*WatcherChannel).AddNotify(notify)
+
+	return notify
+}
+
+func (c *WatcherChild) Update(key, value []byte, ttl uint32) {
 	var valuePtr *[]byte
 	if value != nil {
 		valuePtr = &value
 	}
 
-	c.Channels.Range(func(key, channel any) bool {
-		if watchKey == key {
-			channel.(*WatcherChannel).UpdateValue(valuePtr)
-			return false
-		}
+	// update prefix channels value
+	c.PrefixChannels.Range(func(_, value any) bool {
+		channel, _ := value.(*WatcherChannel)
+		channel.UpdateValue(key, valuePtr, ttl)
 		return true
 	})
+
+	channel, ok := c.Channels.Load(WatchKey(key))
+	if !ok {
+		return
+	}
+
+	channel.(*WatcherChannel).UpdateValue(key, valuePtr, ttl)
 }
 
 type Watcher struct {
 	Namespaces sync.Map // map[string]*WatcherChild
-}
-
-func (w *Watcher) Get() *WatcherMetadata {
-	m := make(map[string]map[uint64]map[string]int)
-	w.Namespaces.Range(func(key, value any) bool {
-		m[key.(string)] = value.(*WatcherChild).Get()
-		return true
-	})
-	return (*WatcherMetadata)(&m)
 }
 
 func (w *Watcher) Namespace(namespace string) *WatcherChild {

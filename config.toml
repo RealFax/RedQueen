@@ -4,6 +4,7 @@ data-dir = "/tmp/red_queen"
 listen-peer-addr = "127.0.0.1:5290"
 listen-client-addr = "127.0.0.1:5230"
 max-snapshots = 5
+requests-merged = false
 
 [store]
 # backend options
@@ -27,10 +28,6 @@ backend = "nuts"
     [[cluster.bootstrap]]
     name = "node-1"
     peer-addr = "127.0.0.1:4539"
-
-# state options
-# new, existing
-state = "new"
 
 token = "red-queen-cluster"
 

@@ -1,8 +1,9 @@
 package nuts_test
 
 import (
-	"github.com/RealFax/RedQueen/store/nuts"
 	"testing"
+
+	"github.com/RealFax/RedQueen/store/nuts"
 )
 
 func TestWatchKey(t *testing.T) {

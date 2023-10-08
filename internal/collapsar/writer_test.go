@@ -2,8 +2,9 @@ package collapsar_test
 
 import (
 	"bytes"
-	"github.com/RealFax/RedQueen/internal/collapsar"
 	"testing"
+
+	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 func TestWriter_Encode(t *testing.T) {
@@ -39,6 +40,17 @@ func TestWriter_Wait(t *testing.T) {
 
 	w.Wait()
 	t.Log("[+] Done")
+}
+
+func TestWriter_Close(t *testing.T) {
+	w := collapsar.NewWriter(2)
+	if err := w.Add([]byte{1}); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	w.Close()
+	if err := w.Add([]byte{1}); err != nil {
+		t.Log("expected error:", err)
+	}
 }
 
 func BenchmarkWriter_Add(b *testing.B) {

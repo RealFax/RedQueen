@@ -3,6 +3,7 @@ package red
 import (
 	"encoding/binary"
 	"errors"
+
 	"github.com/RealFax/RedQueen/store"
 )
 
@@ -29,7 +30,7 @@ func (s *StableStore) SetUint64(key []byte, val uint64) error {
 func (s *StableStore) GetUint64(key []byte) (uint64, error) {
 	val, err := s.store.Get(key)
 	if err != nil {
-		if err == store.ErrKeyNotFound {
+		if errors.Is(err, store.ErrKeyNotFound) {
 			return 0, errors.New("not found")
 		}
 		return 0, err

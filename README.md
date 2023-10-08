@@ -20,6 +20,22 @@ This is a reliable distributed key-value store based on the raft algorithm, and 
 
 [Code example](https://github.com/RealFax/RedQueen/tree/master/client/example)
 
+## Write & Read
+_RedQueen based on raft algorithm has the characteristics of single node write (Leader node) and multiple node read (Follower node)._
+
+### Write-only call
+- `Set`
+- `TrySet`
+- `Delete`
+- `Lock` <!-- IAF start -->
+- `Unlock`
+- `TryLock` <!-- IAF end -->
+
+### Read-only call
+- `Get`
+- `PrefixScan`
+- `Watch`
+
 ## About Internal Advanced Functions
 internal advanced functions require long-term experiments to ensure its reliability
 

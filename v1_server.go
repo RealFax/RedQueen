@@ -22,6 +22,7 @@ type KV interface {
 	TrySet(context.Context, *serverpb.SetRequest) (*serverpb.SetResponse, error)
 	Delete(context.Context, *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error)
 	Watch(*serverpb.WatchRequest, serverpb.KV_WatchServer) error
+	WatchPrefix(*serverpb.WatchPrefixRequest, serverpb.KV_WatchPrefixServer) error
 }
 
 type Locker interface {
@@ -30,7 +31,7 @@ type Locker interface {
 	TryLock(context.Context, *serverpb.TryLockRequest) (*serverpb.TryLockResponse, error)
 }
 
-type RedQueen interface {
+type Internal interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
 	RaftState(context.Context, *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error)
@@ -44,7 +45,7 @@ func (s *Server) responseHeader() *serverpb.ResponseHeader {
 }
 
 func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
 				return serverpb.RaftLogCommand_Set
@@ -69,7 +70,7 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 }
 
 func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.GetResponse, error) {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -87,12 +88,12 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 }
 
 func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) (*serverpb.PrefixScanResponse, error) {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	result, err := storeAPI.PrefixSearchScan(req.Prefix, req.GetReg(), int(req.Offset), int(req.Limit))
+	scanResults, err := storeAPI.PrefixSearchScan(req.Prefix, req.GetReg(), int(req.Offset), int(req.Limit))
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
@@ -100,22 +101,26 @@ func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) 
 	return &serverpb.PrefixScanResponse{
 		Header: s.responseHeader(),
 		Result: func() []*serverpb.PrefixScanResponse_PrefixScanResult {
-			sres := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(result))
-			for i, value := range result {
-				sres[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
+			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(scanResults))
+			for i, value := range scanResults {
+				// todo: this part code will be removed future golang version
+				// ---- start ----
+				value := value
+				// ---- end ----
+				results[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
 					Key:       value.Key,
 					Value:     value.Data,
 					Timestamp: value.Timestamp,
 					Ttl:       value.TTL,
 				}
 			}
-			return sres
+			return results
 		}(),
 	}, nil
 }
 
 func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverpb.SetResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command: func() serverpb.RaftLogCommand {
 			if req.IgnoreTtl {
 				return serverpb.RaftLogCommand_TrySet
@@ -139,7 +144,7 @@ func (s *Server) TrySet(ctx context.Context, req *serverpb.SetRequest) (*serverp
 }
 
 func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serverpb.DeleteResponse, error) {
-	if _, err := s.applyLog(ctx, &serverpb.RaftLogPayload{
+	if err := s.applyLog(ctx, &serverpb.RaftLogPayload{
 		Command:   serverpb.RaftLogCommand_Del,
 		Key:       req.Key,
 		Namespace: req.Namespace,
@@ -151,7 +156,7 @@ func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serv
 }
 
 func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServer) error {
-	storeAPI, err := s.currentNamespace(req.Namespace)
+	storeAPI, err := s.namespace(req.Namespace)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -169,23 +174,58 @@ func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServe
 	defer watcher.Close()
 
 	for {
-		select {
-		case value := <-watcher.Notify():
-			if value.Deleted() && !req.IgnoreErrors {
-				return status.Error(codes.Unavailable, "key has deleted")
-			}
-			if err = stream.Send(&serverpb.WatchResponse{
-				Header:    s.responseHeader(),
-				UpdateSeq: value.Seq,
-				Timestamp: value.Timestamp,
-				Data:      *value.Data,
-			}); err != nil {
-				// unrecoverable error
-				return status.Error(codes.FailedPrecondition, err.Error())
-			}
+		value := <-watcher.Notify()
+		if value.Deleted() && !req.IgnoreErrors {
+			return status.Error(codes.Unavailable, "key has deleted")
+		}
+		if err = stream.Send(&serverpb.WatchResponse{
+			Header:    s.responseHeader(),
+			UpdateSeq: value.Seq,
+			Timestamp: value.Timestamp,
+			Ttl:       value.TTL,
+			Key:       value.Key,
+			Value: func() []byte {
+				if value.Value == nil {
+					return nil
+				}
+				return *value.Value
+			}(),
+		}); err != nil {
+			// unrecoverable error
+			return status.Error(codes.FailedPrecondition, err.Error())
 		}
 	}
 
+}
+
+func (s *Server) WatchPrefix(req *serverpb.WatchPrefixRequest, stream serverpb.KV_WatchPrefixServer) error {
+	storeAPI, err := s.namespace(req.Namespace)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	watcher := storeAPI.WatchPrefix(req.Prefix)
+	defer watcher.Close()
+
+	for {
+		value := <-watcher.Notify()
+		if err = stream.Send(&serverpb.WatchResponse{
+			Header:    s.responseHeader(),
+			UpdateSeq: value.Seq,
+			Timestamp: value.Timestamp,
+			Ttl:       value.TTL,
+			Key:       value.Key,
+			Value: func() []byte {
+				if value.Value == nil {
+					return nil
+				}
+				return *value.Value
+			}(),
+		}); err != nil {
+			// unrecoverable error
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+	}
 }
 
 func (s *Server) Lock(_ context.Context, req *serverpb.LockRequest) (*serverpb.LockResponse, error) {

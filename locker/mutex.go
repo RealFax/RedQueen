@@ -1,13 +1,23 @@
 package locker
 
 import (
-	"github.com/RealFax/RedQueen/store"
-	"github.com/RealFax/RedQueen/utils"
+	"github.com/RealFax/RedQueen/internal/hack"
 	"time"
+
+	"github.com/RealFax/RedQueen/store"
 )
 
-func MutexLock(lockID string, ttl int64, backend Backend) error {
-	if err := backend.TrySetWithTTL(utils.String2Bytes(lockID), []byte{}, uint32(time.Duration(ttl).Seconds())); err != nil {
+func MutexLock(lockID string, ttl int32, backend Backend) error {
+	if err := backend.TrySetWithTTL(
+		hack.String2Bytes(lockID),
+		[]byte{},
+		func() uint32 {
+			if ttl < 0 {
+				return 0
+			}
+			return uint32(ttl)
+		}(),
+	); err != nil {
 		if err == store.ErrKeyAlreadyExists {
 			return ErrStatusBusy
 		}
@@ -17,25 +27,25 @@ func MutexLock(lockID string, ttl int64, backend Backend) error {
 }
 
 func MutexUnlock(lockID string, backend Backend) error {
-	val, err := backend.Get(utils.String2Bytes(lockID))
+	val, err := backend.Get(hack.String2Bytes(lockID))
 	if len(val.Data) == 0 || err == store.ErrKeyNotFound {
 		return ErrStatusBusy
 	}
-	return backend.Del(utils.String2Bytes(lockID))
+	return backend.Del(hack.String2Bytes(lockID))
 }
 
-func MutexTryLock(lockID string, ttl int64, deadline int64, backend Backend) bool {
+func MutexTryLock(lockID string, ttl int32, deadline int64, backend Backend) bool {
 	if MutexLock(lockID, ttl, backend) == nil {
 		return true
 	}
 
-	notify, err := backend.Watch(utils.String2Bytes(lockID))
+	notify, err := backend.Watch(hack.String2Bytes(lockID))
 	if err != nil {
 		return false
 	}
 	defer notify.Close()
 
-	ticker := time.NewTicker(time.Duration(deadline))
+	ticker := time.NewTicker(time.Duration(time.Now().UnixNano()-deadline) * time.Second)
 	defer ticker.Stop()
 
 	select {

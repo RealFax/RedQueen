@@ -19,12 +19,14 @@ func NewValue(data []byte) *Value {
 type WatchValue struct {
 	Seq       uint64
 	Timestamp int64
-	// Data can be nil pointer, if Data is nil pointer then that the Data is deleted
-	Data *[]byte
+	TTL       uint32
+	Key       []byte
+	// Value can be nil pointer, if Value is nil pointer then that the Value is deleted
+	Value *[]byte
 }
 
 func (v *WatchValue) Deleted() bool {
-	return v.Data == nil
+	return v.Value == nil
 }
 
 type Namespace Base
@@ -32,10 +34,6 @@ type Namespace Base
 type WatcherNotify interface {
 	Notify() chan *WatchValue
 	Close() error
-}
-
-type WatcherMetadata interface {
-	String() string
 }
 
 type Base interface {
@@ -50,11 +48,11 @@ type Base interface {
 	TrySet(key, value []byte) error
 	Del(key []byte) error
 	Watch(key []byte) (notify WatcherNotify, err error)
+	WatchPrefix(prefix []byte) WatcherNotify
 }
 
 type Store interface {
 	Base
-	GetWatch() WatcherMetadata
 	Namespace(namespace string) (Namespace, error)
 	Close() error
 	// Snapshot should be in tar & gzip format
