@@ -159,11 +159,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			return clusters
 		}(),
 	}); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "NewServer")
 	}
 
 	// init distributed lock backend
-	server.lockerBackend = NewLockerBackend(server.store, server.applyLog)
+	if server.lockerBackend, err = NewLockerBackend(server.store, server.applyLog); err != nil {
+		return nil, errors.Wrap(err, "NewServer")
+	}
 
 	// init requests merged
 	if cfg.Node.RequestsMerged {
