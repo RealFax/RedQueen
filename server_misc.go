@@ -55,11 +55,15 @@ func (w LockerBackendWrapper) Watch(key []byte) (store.WatcherNotify, error) {
 }
 
 func NewLockerBackend(
-	ns store.Namespace,
+	s store.Store,
 	raftApplyFunc func(context.Context, *serverpb.RaftLogPayload, time.Duration) error,
-) locker.Backend {
-	return &LockerBackendWrapper{
-		store: ns,
-		apply: raftApplyFunc,
+) (locker.Backend, error) {
+	current, err := s.Namespace(locker.Namespace)
+	if err != nil {
+		return nil, err
 	}
+	return &LockerBackendWrapper{
+		store: current,
+		apply: raftApplyFunc,
+	}, nil
 }

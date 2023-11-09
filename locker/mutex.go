@@ -1,6 +1,7 @@
 package locker
 
 import (
+	"errors"
 	"github.com/RealFax/RedQueen/internal/hack"
 	"time"
 
@@ -18,7 +19,7 @@ func MutexLock(lockID string, ttl int32, backend Backend) error {
 			return uint32(ttl)
 		}(),
 	); err != nil {
-		if err == store.ErrKeyAlreadyExists {
+		if errors.Is(err, store.ErrKeyAlreadyExists) {
 			return ErrStatusBusy
 		}
 		return err
@@ -27,8 +28,7 @@ func MutexLock(lockID string, ttl int32, backend Backend) error {
 }
 
 func MutexUnlock(lockID string, backend Backend) error {
-	val, err := backend.Get(hack.String2Bytes(lockID))
-	if len(val.Data) == 0 || err == store.ErrKeyNotFound {
+	if _, err := backend.Get(hack.String2Bytes(lockID)); errors.Is(err, store.ErrKeyNotFound) {
 		return ErrStatusBusy
 	}
 	return backend.Del(hack.String2Bytes(lockID))
