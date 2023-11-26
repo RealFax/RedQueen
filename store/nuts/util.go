@@ -4,10 +4,10 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/nutsdb/nutsdb"
@@ -31,59 +31,93 @@ func PrefixKey(prefix []byte) string {
 	return base64.StdEncoding.EncodeToString(prefix)
 }
 
-func BackupReader(dst string, src io.Reader) error {
-	{
-		ugz, err := gzip.NewReader(src)
+func BackupWriter(src string, dst io.Writer) error {
+	gzipWriter := gzip.NewWriter(dst)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		src = ugz
-	}
-	reader := tar.NewReader(src)
-	rootDir := ""
-	for {
-		header, err := reader.Next()
+
+		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
 			return err
 		}
 
-		// check if the path is vulnerable
-		if strings.Contains(header.FileInfo().Name(), "..") {
-			continue
+		// Update the header name to use relative paths
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
-
-		// handle dir
-		if header.FileInfo().IsDir() {
-			if rootDir == "" {
-				rootDir = header.FileInfo().Name()
-				if err = os.MkdirAll(dst, header.FileInfo().Mode()); err != nil {
-					return err
-				}
-				continue
-			}
-			if err = os.MkdirAll(path, header.FileInfo().Mode()); err != nil {
+		// If the file is a regular file, write its contents to the tarball
+		if info.Mode().IsRegular() {
+			file, err := os.Open(path)
+			if err != nil {
 				return err
 			}
-			continue
+			defer file.Close()
+
+			_, err = io.Copy(tarWriter, file)
+			if err != nil {
+				return err
+			}
 		}
 
-		path = filepath.Clean(strings.Replace(path, rootDir, "", 1))
-		// handle file
-		f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, header.FileInfo().Mode())
+		return nil
+	})
+}
+
+func BackupReader(dst string, src io.Reader) error {
+	gzipReader, err := gzip.NewReader(src)
+	if err != nil {
+		return err
+	}
+	defer gzipReader.Close()
+
+	tarReader := tar.NewReader(gzipReader)
+
+	for {
+		header, err := tarReader.Next()
+
+		if err == io.EOF {
+			break // End of archive
+		}
 		if err != nil {
 			return err
 		}
-		if _, err = io.Copy(f, reader); err != nil {
-			_ = f.Close()
-			return err
+
+		targetPath := filepath.Join(dst, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(targetPath, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			file, err := os.Create(targetPath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			if _, err := io.Copy(file, tarReader); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported tar entry: %s", header.Name)
 		}
-		_ = f.Close()
 	}
+
 	return nil
 }
 

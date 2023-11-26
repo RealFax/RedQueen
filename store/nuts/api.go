@@ -229,7 +229,7 @@ func (s *storeAPI) Snapshot() (io.Reader, error) {
 
 	buf := &bytes.Buffer{}
 	return buf, db.View(func(tx *nutsdb.Tx) error {
-		return db.BackupTarGZ(buf)
+		return BackupWriter(s.dataDir, buf)
 	})
 }
 
