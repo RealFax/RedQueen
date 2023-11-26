@@ -29,8 +29,6 @@ func (v *WatchValue) Deleted() bool {
 	return v.Value == nil
 }
 
-type Namespace Base
-
 type WatcherNotify interface {
 	Notify() chan *WatchValue
 	Close() error
@@ -50,6 +48,8 @@ type Base interface {
 	Watch(key []byte) (notify WatcherNotify, err error)
 	WatchPrefix(prefix []byte) WatcherNotify
 }
+
+type Namespace Base
 
 type Store interface {
 	Base
