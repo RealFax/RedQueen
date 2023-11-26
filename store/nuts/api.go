@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
-	"sync"
 	"sync/atomic"
 
 	"github.com/RealFax/RedQueen/store"
@@ -26,7 +25,6 @@ func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
 		db:           s.db,
 		watcher:      s.watcher,
 		watcherChild: s.watcher.Namespace(namespace),
-		mu:           sync.Mutex{},
 		namespace:    namespace,
 	}, nil
 }
@@ -56,13 +54,21 @@ func (s *storeAPI) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) erro
 	if err = fn(tx); err != nil {
 		_ = tx.Rollback()
 		return err
-	} else {
-		if err = tx.Commit(); err != nil {
-			_ = tx.Rollback()
-			return err
-		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		_ = tx.Rollback()
+		return err
 	}
 	return nil
+}
+
+func (s *storeAPI) Begin(writable bool) (*nutsdb.Tx, error) {
+	db, err := s.DB()
+	if err != nil {
+		return nil, err
+	}
+	return db.Begin(writable)
 }
 
 func (s *storeAPI) Get(key []byte) (*store.Value, error) {
@@ -223,7 +229,7 @@ func (s *storeAPI) Snapshot() (io.Reader, error) {
 
 	buf := &bytes.Buffer{}
 	return buf, db.View(func(tx *nutsdb.Tx) error {
-		return db.BackupTarGZ(buf)
+		return BackupWriter(s.dataDir, buf)
 	})
 }
 
