@@ -4,7 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/base64"
-	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -55,20 +55,19 @@ func BackupWriter(src string, dst io.Writer) error {
 		}
 		header.Name = relPath
 
-		if err := tarWriter.WriteHeader(header); err != nil {
+		if err = tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
 
 		// If the file is a regular file, write its contents to the tarball
 		if info.Mode().IsRegular() {
-			file, err := os.Open(path)
+			f, err := os.Open(path)
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer f.Close()
 
-			_, err = io.Copy(tarWriter, file)
-			if err != nil {
+			if _, err = io.Copy(tarWriter, f); err != nil {
 				return err
 			}
 		}
@@ -89,32 +88,32 @@ func BackupReader(dst string, src io.Reader) error {
 	for {
 		header, err := tarReader.Next()
 
-		if err == io.EOF {
-			break // End of archive
-		}
 		if err != nil {
+			if err == io.EOF {
+				break // end of archive
+			}
 			return err
 		}
 
-		targetPath := filepath.Join(dst, header.Name)
+		targetPath := filepath.Join(dst, filepath.Clean(header.Name))
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(targetPath, os.FileMode(header.Mode)); err != nil {
-				return err
+			if oErr := os.MkdirAll(targetPath, os.FileMode(header.Mode)); oErr != nil {
+				return oErr
 			}
 		case tar.TypeReg:
-			file, err := os.Create(targetPath)
-			if err != nil {
-				return err
+			f, oErr := os.Create(targetPath)
+			if oErr != nil {
+				return oErr
 			}
-			defer file.Close()
+			defer f.Close()
 
-			if _, err := io.Copy(file, tarReader); err != nil {
-				return err
+			if _, cErr := io.Copy(f, tarReader); cErr != nil {
+				return cErr
 			}
 		default:
-			return fmt.Errorf("unsupported tar entry: %s", header.Name)
+			return errors.Errorf("unsupported tar entry: %s", header.Name)
 		}
 	}
 
