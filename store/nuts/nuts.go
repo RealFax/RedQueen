@@ -49,11 +49,11 @@ type Config struct {
 	RWMode  RWMode
 }
 
-type storeAPI struct {
+type DB struct {
 	state *uint32 // atomic
 
-	db        *nutsdb.DB
-	dbOptions []nutsdb.Option
+	db      *nutsdb.DB
+	options []nutsdb.Option
 
 	// root watcher
 	watcher *Watcher
@@ -81,10 +81,10 @@ func New(cfg Config) (store.Store, error) {
 
 	rootWatcher := &Watcher{}
 
-	return &storeAPI{
+	return &DB{
 		state:        new(uint32),
 		db:           db,
-		dbOptions:    opts,
+		options:      opts,
 		watcher:      rootWatcher,
 		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
 		namespace:    store.DefaultNamespace,

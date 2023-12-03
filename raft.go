@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -24,6 +25,7 @@ type RaftConfig struct {
 
 type Raft struct {
 	bootstrap bool
+	term      uint64 // [ATOMIC]
 	clusters  []raft.Server
 
 	cfg           *raft.Config
@@ -36,7 +38,11 @@ type Raft struct {
 }
 
 func (r *Raft) AddCluster(id raft.ServerID, addr raft.ServerAddress) error {
-	return r.AddVoter(id, addr, 0, 0).Error()
+	return r.AddVoter(id, addr, 0, time.Second*30).Error()
+}
+
+func (r *Raft) Term() uint64 {
+	return atomic.LoadUint64(&r.term)
 }
 
 type RaftServerOption func(*Raft) error
@@ -66,7 +72,11 @@ func RaftWithConfig(cfg *raft.Config) RaftServerOption {
 
 func RaftWithStdFSM(store store.Store) RaftServerOption {
 	return func(r *Raft) error {
-		r.fsm = NewFSM(store, NewFSMHandlers(store))
+		r.fsm = &FSM{
+			Term:     &r.term,
+			Handlers: NewFSMHandlers(store),
+			Store:    store,
+		}
 		return nil
 	}
 }
@@ -75,7 +85,7 @@ func RaftWithBoltLogStore(path string) RaftServerOption {
 	return func(r *Raft) (err error) {
 		r.logStore, err = raftboltdb.NewBoltStore(path)
 		if err != nil {
-			return errors.Wrap(err, "bolt-log-store")
+			return errors.Wrap(err, "bolt-log-Store")
 		}
 		return
 	}
@@ -85,7 +95,7 @@ func RaftWithStdStableStore(store store.Store) RaftServerOption {
 	return func(r *Raft) (err error) {
 		r.stableStore, err = NewStableStore(store)
 		if err != nil {
-			return errors.Wrap(err, "std-stable-store")
+			return errors.Wrap(err, "std-stable-Store")
 		}
 		return
 	}
@@ -95,7 +105,7 @@ func RaftWithFileSnapshotStore(path string, retain int, logOut io.Writer) RaftSe
 	return func(r *Raft) (err error) {
 		r.snapshotStore, err = raft.NewFileSnapshotStore(path, retain, logOut)
 		if err != nil {
-			return errors.Wrap(err, "file-snapshot-store")
+			return errors.Wrap(err, "file-snapshot-Store")
 		}
 		return
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/RealFax/RedQueen/store"
 )
 
-func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
+func (s *DB) _namespace(namespace string) (*DB, error) {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return nil, ErrStateBreak
 	}
@@ -20,7 +20,7 @@ func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
 		return s, nil
 		// return nil, errors.New("conflicts with the current namespace")
 	}
-	return &storeAPI{
+	return &DB{
 		state:        s.state,
 		db:           s.db,
 		watcher:      s.watcher,
@@ -29,18 +29,18 @@ func (s *storeAPI) _namespace(namespace string) (*storeAPI, error) {
 	}, nil
 }
 
-func (s *storeAPI) State() uint32 {
+func (s *DB) State() uint32 {
 	return atomic.LoadUint32(s.state)
 }
 
-func (s *storeAPI) DB() (*nutsdb.DB, error) {
+func (s *DB) DB() (*nutsdb.DB, error) {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return nil, ErrStateBreak
 	}
 	return s.db, nil
 }
 
-func (s *storeAPI) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) error {
+func (s *DB) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) error {
 	db, err := s.DB()
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (s *storeAPI) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) erro
 	return nil
 }
 
-func (s *storeAPI) Begin(writable bool) (*nutsdb.Tx, error) {
+func (s *DB) Begin(writable bool) (*nutsdb.Tx, error) {
 	db, err := s.DB()
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (s *storeAPI) Begin(writable bool) (*nutsdb.Tx, error) {
 	return db.Begin(writable)
 }
 
-func (s *storeAPI) Get(key []byte) (*store.Value, error) {
+func (s *DB) Get(key []byte) (*store.Value, error) {
 	val := store.NewValue(nil)
 	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
 		entry, err := tx.Get(s.namespace, key)
@@ -89,7 +89,7 @@ func (s *storeAPI) Get(key []byte) (*store.Value, error) {
 	})
 }
 
-func (s *storeAPI) PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*store.Value, error) {
+func (s *DB) PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*store.Value, error) {
 	val := make([]*store.Value, 0, limit-offset)
 	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
 		var (
@@ -118,11 +118,11 @@ func (s *storeAPI) PrefixSearchScan(prefix []byte, reg string, offset, limit int
 	})
 }
 
-func (s *storeAPI) PrefixScan(prefix []byte, offset, limit int) ([]*store.Value, error) {
+func (s *DB) PrefixScan(prefix []byte, offset, limit int) ([]*store.Value, error) {
 	return s.PrefixSearchScan(prefix, "", offset, limit)
 }
 
-func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
+func (s *DB) SetWithTTL(key, value []byte, ttl uint32) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		if err := tx.Put(s.namespace, key, value, ttl); err != nil {
 			return err
@@ -133,11 +133,11 @@ func (s *storeAPI) SetWithTTL(key, value []byte, ttl uint32) error {
 	})
 }
 
-func (s *storeAPI) Set(key, value []byte) error {
+func (s *DB) Set(key, value []byte) error {
 	return s.SetWithTTL(key, value, 0)
 }
 
-func (s *storeAPI) TrySetWithTTL(key, value []byte, ttl uint32) error {
+func (s *DB) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		_, err := tx.Get(s.namespace, key)
 		if err == nil {
@@ -154,11 +154,11 @@ func (s *storeAPI) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	})
 }
 
-func (s *storeAPI) TrySet(key, value []byte) error {
+func (s *DB) TrySet(key, value []byte) error {
 	return s.TrySetWithTTL(key, value, 0)
 }
 
-func (s *storeAPI) Del(key []byte) error {
+func (s *DB) Del(key []byte) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		if err := tx.Delete(s.namespace, key); err != nil {
 			return err
@@ -168,7 +168,7 @@ func (s *storeAPI) Del(key []byte) error {
 	})
 }
 
-func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
+func (s *DB) Watch(key []byte) (store.WatcherNotify, error) {
 	if strictMode.Load() {
 		// check watch key does it exist
 		if err := s.Transaction(false, func(tx *nutsdb.Tx) error {
@@ -181,16 +181,16 @@ func (s *storeAPI) Watch(key []byte) (store.WatcherNotify, error) {
 	return s.watcherChild.Watch(key), nil
 }
 
-func (s *storeAPI) WatchPrefix(prefix []byte) store.WatcherNotify {
+func (s *DB) WatchPrefix(prefix []byte) store.WatcherNotify {
 	// prefix watch strict mode is disabled
 	return s.watcherChild.WatchPrefix(prefix)
 }
 
-func (s *storeAPI) GetNamespace() string {
+func (s *DB) GetNamespace() string {
 	return s.namespace
 }
 
-func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
+func (s *DB) Namespace(namespace string) (store.Namespace, error) {
 	n, err := s._namespace(namespace)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (s *storeAPI) Namespace(namespace string) (store.Namespace, error) {
 	return n, nil
 }
 
-func (s *storeAPI) Close() error {
+func (s *DB) Close() error {
 	db, err := s.DB()
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (s *storeAPI) Close() error {
 	return db.Close()
 }
 
-func (s *storeAPI) Snapshot() (io.Reader, error) {
+func (s *DB) Snapshot() (io.Reader, error) {
 	// get db session first
 	db, err := s.DB()
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *storeAPI) Snapshot() (io.Reader, error) {
 	})
 }
 
-func (s *storeAPI) Break(ctx context.Context) error {
+func (s *DB) Break(ctx context.Context) error {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return ErrStateBreak
 	}
@@ -253,7 +253,7 @@ func (s *storeAPI) Break(ctx context.Context) error {
 	return nil
 }
 
-func (s *storeAPI) Restore(src io.Reader) (err error) {
+func (s *DB) Restore(src io.Reader) (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err = s.Break(ctx); err != nil {
@@ -276,7 +276,7 @@ func (s *storeAPI) Restore(src io.Reader) (err error) {
 	}
 
 	// reopen nuts db
-	if s.db, err = nutsdb.Open(nutsdb.DefaultOptions, s.dbOptions...); err != nil {
+	if s.db, err = nutsdb.Open(nutsdb.DefaultOptions, s.options...); err != nil {
 		goto CancelBreak
 	}
 
