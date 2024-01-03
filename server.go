@@ -123,7 +123,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		go server.pprofServer.Run()
 	}
 
-	// init server Store backend
+	// init server store backend
 	if server.store, err = newStoreBackend(cfg.Store, cfg.Node.DataDir); err != nil {
 		return nil, err
 	}
