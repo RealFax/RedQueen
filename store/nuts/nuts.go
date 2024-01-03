@@ -52,8 +52,8 @@ type Config struct {
 type Store struct {
 	state *uint32 // atomic
 
-	db        *atomic.Pointer[nutsdb.DB]
-	dbOptions []nutsdb.Option
+	db      *atomic.Pointer[nutsdb.DB]
+	options []nutsdb.Option
 
 	// root watcher
 	watcher *Watcher
@@ -87,7 +87,7 @@ func New(cfg Config) (store.Store, error) {
 	return &Store{
 		state:        new(uint32),
 		db:           &dbPtr,
-		dbOptions:    opts,
+		options:      opts,
 		watcher:      rootWatcher,
 		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
 		namespace:    store.DefaultNamespace,

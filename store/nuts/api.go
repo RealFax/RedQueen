@@ -278,7 +278,7 @@ func (s *Store) Restore(src io.Reader) (err error) {
 
 	// reopen nuts db
 	{
-		newDB, oErr := nutsdb.Open(nutsdb.DefaultOptions, s.dbOptions...)
+		newDB, oErr := nutsdb.Open(nutsdb.DefaultOptions, s.options...)
 		if oErr != nil {
 			err = oErr
 			goto CancelBreak
