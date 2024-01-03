@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/raft"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"io"
-	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -43,7 +42,7 @@ type Internal interface {
 func (s *Server) responseHeader() *serverpb.ResponseHeader {
 	return &serverpb.ResponseHeader{
 		ClusterId: s.clusterID,
-		RaftTerm:  atomic.LoadUint64(&s.term),
+		RaftTerm:  s.raft.Term(),
 	}
 }
 
