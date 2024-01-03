@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/pkg/errors"
-
 	"net"
 	"sync"
 	"time"
@@ -25,7 +24,6 @@ var (
 )
 
 type Server struct {
-	term      uint64 // [ATOMIC]
 	clusterID string
 
 	cfg *config.Config
@@ -125,7 +123,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		go server.pprofServer.Run()
 	}
 
-	// init server store backend
+	// init server Store backend
 	if server.store, err = newStoreBackend(cfg.Store, cfg.Node.DataDir); err != nil {
 		return nil, err
 	}

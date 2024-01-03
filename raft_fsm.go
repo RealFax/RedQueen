@@ -3,6 +3,7 @@ package red
 import (
 	"bytes"
 	"io"
+	"sync/atomic"
 
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
@@ -13,11 +14,13 @@ import (
 
 type FSMHandleFunc func(*serverpb.RaftLogPayload) error
 type FSM struct {
-	handlers map[serverpb.RaftLogCommand]FSMHandleFunc
-	store    store.Store
+	Term     *uint64
+	Handlers map[serverpb.RaftLogCommand]FSMHandleFunc
+	Store    store.Store
 }
 
 func (f *FSM) Apply(log *raft.Log) any {
+	atomic.StoreUint64(f.Term, log.Term)
 	switch log.Type {
 	case raft.LogCommand:
 		messages, err := UnpackLog(bytes.NewReader(log.Data))
@@ -25,7 +28,7 @@ func (f *FSM) Apply(log *raft.Log) any {
 			return err
 		}
 		for _, message := range messages {
-			handle, ok := f.handlers[message.Command]
+			handle, ok := f.Handlers[message.Command]
 			if !ok {
 				return errors.Errorf("unimplemented command %s handler", message.Command.String())
 			}
@@ -39,7 +42,7 @@ func (f *FSM) Apply(log *raft.Log) any {
 }
 
 func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
-	snapshot, err := f.store.Snapshot()
+	snapshot, err := f.Store.Snapshot()
 	if err != nil {
 		return nil, errors.Wrap(err, "create snapshot fail")
 	}
@@ -48,12 +51,5 @@ func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
 
 func (f *FSM) Restore(rc io.ReadCloser) error {
 	defer rc.Close()
-	return f.store.Restore(rc)
-}
-
-func NewFSM(s store.Store, handlers map[serverpb.RaftLogCommand]FSMHandleFunc) *FSM {
-	return &FSM{
-		handlers: handlers,
-		store:    s,
-	}
+	return f.Store.Restore(rc)
 }

@@ -2,12 +2,12 @@ package client
 
 import (
 	"context"
-	"github.com/pkg/errors"
-
 	"github.com/RealFax/RedQueen/api/serverpb"
+	"github.com/pkg/errors"
 )
 
 type Value struct {
+	Key  []byte
 	Data []byte
 	TTL  uint32
 }
@@ -32,7 +32,6 @@ func (c *kvClient) Set(ctx context.Context, key, value []byte, ttl uint32, names
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.Set(ctx, &serverpb.SetRequest{
 		Key:         key,
@@ -50,7 +49,6 @@ func (c *kvClient) Get(ctx context.Context, key []byte, namespace *string) (*Val
 	if err != nil {
 		return nil, err
 	}
-	defer client.conn.Release()
 
 	resp, err := client.instance.Get(ctx, &serverpb.GetRequest{
 		Key:       key,
@@ -60,6 +58,7 @@ func (c *kvClient) Get(ctx context.Context, key []byte, namespace *string) (*Val
 		return nil, err
 	}
 	return &Value{
+		Key:  key,
 		Data: resp.Value,
 		TTL:  resp.Ttl,
 	}, nil
@@ -70,7 +69,6 @@ func (c *kvClient) PrefixScan(ctx context.Context, prefix []byte, offset, limit 
 	if err != nil {
 		return nil, err
 	}
-	defer client.conn.Release()
 
 	resp, err := client.instance.PrefixScan(ctx, &serverpb.PrefixScanRequest{
 		Prefix:    prefix,
@@ -87,6 +85,7 @@ func (c *kvClient) PrefixScan(ctx context.Context, prefix []byte, offset, limit 
 		values := make([]*Value, len(resp.Result))
 		for i, result := range resp.Result {
 			values[i] = &Value{
+				Key:  result.Value,
 				Data: result.Value,
 				TTL:  result.Ttl,
 			}
@@ -100,7 +99,6 @@ func (c *kvClient) TrySet(ctx context.Context, key, value []byte, ttl uint32, na
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.TrySet(ctx, &serverpb.SetRequest{
 		Key:         key,
@@ -118,7 +116,6 @@ func (c *kvClient) Delete(ctx context.Context, key []byte, namespace *string) er
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.Delete(ctx, &serverpb.DeleteRequest{
 		Key:       key,
@@ -136,7 +133,6 @@ func (c *kvClient) Watch(ctx context.Context, watcher *Watcher) error {
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	watch, err := client.instance.Watch(ctx, &serverpb.WatchRequest{
 		Key:          watcher.key,
@@ -184,7 +180,6 @@ func (c *kvClient) WatchPrefix(ctx context.Context, watcher *Watcher) error {
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	watch, err := client.instance.WatchPrefix(ctx, &serverpb.WatchPrefixRequest{
 		Prefix:    watcher.key,

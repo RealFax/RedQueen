@@ -2,8 +2,11 @@ package red
 
 import (
 	"context"
+	"github.com/RealFax/RedQueen/pkg/fs"
 	"github.com/google/uuid"
 	"github.com/hashicorp/raft"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"io"
 	"sync/atomic"
 	"time"
 
@@ -34,7 +37,7 @@ type Locker interface {
 type Internal interface {
 	AppendCluster(context.Context, *serverpb.AppendClusterRequest) (*serverpb.AppendClusterResponse, error)
 	LeaderMonitor(*serverpb.LeaderMonitorRequest, serverpb.RedQueen_LeaderMonitorServer) error
-	RaftState(context.Context, *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error)
+	RaftState(context.Context, *emptypb.Empty) (*serverpb.RaftStateResponse, error)
 }
 
 func (s *Server) responseHeader() *serverpb.ResponseHeader {
@@ -277,7 +280,7 @@ func (s *Server) LeaderMonitor(_ *serverpb.LeaderMonitorRequest, stream serverpb
 	}
 }
 
-func (s *Server) RaftState(_ context.Context, _ *serverpb.RaftStateRequest) (*serverpb.RaftStateResponse, error) {
+func (s *Server) RaftState(_ context.Context, _ *emptypb.Empty) (*serverpb.RaftStateResponse, error) {
 	var state serverpb.RaftState
 	switch s.raft.Stats()["state"] {
 	case "Follower":
@@ -292,4 +295,33 @@ func (s *Server) RaftState(_ context.Context, _ *serverpb.RaftStateRequest) (*se
 		state = serverpb.RaftState_unknown
 	}
 	return &serverpb.RaftStateResponse{State: state}, nil
+}
+
+func (s *Server) RaftSnapshot(_ context.Context, req *serverpb.RaftSnapshotRequest) (*emptypb.Empty, error) {
+	future := s.raft.Snapshot()
+	if future.Error() != nil {
+		return nil, status.Error(codes.Internal, future.Error().Error())
+	}
+
+	if req.Path == nil {
+		return &emptypb.Empty{}, nil
+	}
+
+	_, rc, err := future.Open()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer rc.Close()
+
+	f, err := fs.MustOpen(req.GetPath())
+	if err != nil {
+		return nil, status.Errorf(codes.Aborted, "server open snapshot file error, cause: %s", err)
+	}
+	defer f.Close()
+
+	if _, err = io.Copy(f, rc); err != nil {
+		return nil, status.Errorf(codes.Aborted, "server write snapshot file error, cause: %s", err)
+	}
+
+	return &emptypb.Empty{}, nil
 }

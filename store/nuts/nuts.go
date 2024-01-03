@@ -49,11 +49,11 @@ type Config struct {
 	RWMode  RWMode
 }
 
-type storeAPI struct {
+type Store struct {
 	state *uint32 // atomic
 
-	db        *nutsdb.DB
-	dbOptions []nutsdb.Option
+	db      *atomic.Pointer[nutsdb.DB]
+	options []nutsdb.Option
 
 	// root watcher
 	watcher *Watcher
@@ -61,7 +61,7 @@ type storeAPI struct {
 	// watcherChild for the current namespace
 	watcherChild *WatcherChild
 
-	mu        sync.Mutex
+	mu        sync.RWMutex
 	namespace string
 	dataDir   string
 }
@@ -81,10 +81,13 @@ func New(cfg Config) (store.Store, error) {
 
 	rootWatcher := &Watcher{}
 
-	return &storeAPI{
+	dbPtr := atomic.Pointer[nutsdb.DB]{}
+	dbPtr.Store(db)
+
+	return &Store{
 		state:        new(uint32),
-		db:           db,
-		dbOptions:    opts,
+		db:           &dbPtr,
+		options:      opts,
 		watcher:      rootWatcher,
 		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
 		namespace:    store.DefaultNamespace,

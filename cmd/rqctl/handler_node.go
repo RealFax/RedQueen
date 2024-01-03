@@ -39,3 +39,21 @@ func NodeLeaderMonitor(c *cli.Context) error {
 		log.Printf("[+] state updated, leader: %v", result)
 	}
 }
+
+func NodeSnapshot(c *cli.Context) error {
+	_invoker, err := client.New(
+		c.Context,
+		[]string{c.String("endpoint")},
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return err
+	}
+
+	if err = _invoker.Snapshot(c.Context, Pointer(c.String("path"))); err != nil {
+		return err
+	}
+
+	log.Printf("[+] snapshot save success")
+	return nil
+}

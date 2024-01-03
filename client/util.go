@@ -1,17 +1,19 @@
 package client
 
 import (
+	"encoding/hex"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"unicode/utf8"
 )
 
 type wrapperClient[T any] struct {
-	conn     *GrpcPoolConn
+	conn     *grpc.ClientConn
 	instance T
 }
 
-func newClientCall[T any](writeable bool, conn Conn, newFunc func(grpc.ClientConnInterface) T) (*wrapperClient[T], error) {
-	gConn, err := func() (*GrpcPoolConn, error) {
+func newClientCall[T any, FC func(connInterface grpc.ClientConnInterface) T](writeable bool, conn Conn, newFunc FC) (*wrapperClient[T], error) {
+	gConn, err := func() (*grpc.ClientConn, error) {
 		if writeable {
 			return conn.WriteOnly()
 		}
@@ -41,4 +43,11 @@ func Namespace(s string) *string {
 func NewLeaderMonitorReceiver() *chan bool {
 	c := make(chan bool, 1)
 	return &c
+}
+
+func BString(b []byte) string {
+	if utf8.Valid(b) {
+		return string(b)
+	}
+	return hex.EncodeToString(b)
 }

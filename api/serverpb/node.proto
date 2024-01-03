@@ -4,6 +4,8 @@ package serverpb;
 
 option go_package = "./;serverpb";
 
+import "google/protobuf/empty.proto";
+
 enum RaftLogCommand {
   SetWithTTL = 0;
   TrySetWithTTL = 1;
@@ -46,8 +48,13 @@ message RaftStateResponse {
   RaftState state = 1;
 }
 
+message RaftSnapshotRequest {
+  optional string path = 1;
+}
+
 service RedQueen {
   rpc AppendCluster(AppendClusterRequest) returns (AppendClusterResponse) {}
   rpc LeaderMonitor(LeaderMonitorRequest) returns (stream LeaderMonitorResponse) {}
-  rpc RaftState(RaftStateRequest) returns (RaftStateResponse) {}
+  rpc RaftState(google.protobuf.Empty) returns (RaftStateResponse) {}
+  rpc RaftSnapshot(RaftSnapshotRequest) returns (google.protobuf.Empty) {}
 }

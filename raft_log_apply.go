@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"github.com/RealFax/RedQueen/pkg/collapsar"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -16,7 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 var (

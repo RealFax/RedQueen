@@ -41,7 +41,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20'
+          go-version: '1.21'
 
       - name: Making RedQueen ${{ matrix.goos }}/${{ matrix.goarch }}
         run: go build -o rqd.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqd/main.go
@@ -59,4 +59,59 @@ jobs:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./rqd.${{ matrix.goos }}.${{ matrix.goarch }}
           asset_name: rqd.${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.suffix }}
+          asset_content_type: application/octet-stream
+
+  build-ctl:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: amd64
+            goos: linux
+            suffix: ''
+
+          - goarch: arm64
+            goos: linux
+            suffix: ''
+
+          - goarch: amd64
+            goos: darwin
+            suffix: ''
+
+          - goarch: arm64
+            goos: darwin
+            suffix: ''
+
+          - goarch: amd64
+            goos: windows
+            suffix: '.exe'
+
+          - goarch: arm64
+            goos: windows
+            suffix: '.exe'
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Making RedQueen ${{ matrix.goos }}/${{ matrix.goarch }}
+        run: go build -o rqctl.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqctl/main.go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+
+      - name: Uploading assets...
+        if: ${{ !env.ACT }}
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./rqctl.${{ matrix.goos }}.${{ matrix.goarch }}
+          asset_name: rqctl.${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.suffix }}
           asset_content_type: application/octet-stream
