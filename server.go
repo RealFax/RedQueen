@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/pkg/errors"
-
 	"net"
 	"sync"
 	"time"

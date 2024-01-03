@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
@@ -11,6 +10,7 @@ import (
 type InternalClient interface {
 	AppendCluster(ctx context.Context, serverID string, peerAddr string, voter bool) error
 	LeaderMonitor(ctx context.Context, recv *chan bool) error
+	Snapshot(ctx context.Context, serverPath *string) error
 }
 
 type internalClient struct {
@@ -23,7 +23,6 @@ func (c *internalClient) AppendCluster(ctx context.Context, serverID, peerAddr s
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.AppendCluster(ctx, &serverpb.AppendClusterRequest{
 		ServerId: serverID,
@@ -42,7 +41,6 @@ func (c *internalClient) LeaderMonitor(ctx context.Context, recv *chan bool) err
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithCancel(ctx)
@@ -60,6 +58,21 @@ func (c *internalClient) LeaderMonitor(ctx context.Context, recv *chan bool) err
 		}
 		*recv <- resp.Leader
 	}
+}
+
+func (c *internalClient) Snapshot(ctx context.Context, serverPath *string) error {
+	client, err := newClientCall(false, c.conn, serverpb.NewRedQueenClient)
+	if err != nil {
+		return err
+	}
+
+	if _, err = client.instance.RaftSnapshot(ctx, &serverpb.RaftSnapshotRequest{
+		Path: serverPath,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func newInternalClient(ctx context.Context, conn Conn) InternalClient {

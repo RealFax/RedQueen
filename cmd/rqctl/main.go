@@ -47,7 +47,7 @@ func dialRQ() error {
 		endpoints[i] = addr
 	}
 
-	client.SetGrpcPoolSize(1)
+	client.SetMaxOpenConn(1)
 	if invoker, err = client.New(
 		context.Background(),
 		endpoints,
@@ -93,6 +93,20 @@ func main() {
 					},
 				},
 				Action: NodeLeaderMonitor,
+			}, {
+				Name:      "snapshot",
+				UsageText: "Snapshot create server snapshot in server",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "endpoint",
+						Usage: "RedQueen server endpoint address",
+					},
+					&cli.StringFlag{
+						Name:  "path",
+						Usage: "The path of the snapshot in the server",
+					},
+				},
+				Action: NodeSnapshot,
 			}, {
 				Name: "set",
 				Flags: []cli.Flag{

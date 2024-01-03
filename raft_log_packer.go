@@ -2,13 +2,13 @@ package red
 
 import (
 	"encoding/binary"
+	"github.com/RealFax/RedQueen/pkg/collapsar"
 	"io"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 const (

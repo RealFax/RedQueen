@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/RealFax/RedQueen/pkg/fs"
 	"github.com/pkg/errors"
 	"os"
 	"path"
@@ -21,11 +22,11 @@ type env struct {
 	configFile string
 }
 
-func (r env) FirstRun() bool {
+func (r *env) FirstRun() bool {
 	return r.firstRun
 }
 
-func (r env) ConfigFile() string {
+func (r *env) ConfigFile() string {
 	return r.configFile
 }
 
@@ -75,7 +76,7 @@ type Auth struct {
 }
 
 type Config struct {
-	env
+	*env
 	Node    `toml:"node"`
 	Store   `toml:"store"`
 	Cluster `toml:"cluster"`
@@ -88,21 +89,16 @@ func (c *Config) setupEnv() {
 	c.env.initLockFile = path.Join(c.Node.DataDir, ".init.lock")
 
 	// write init lock
-	if _, err := os.Stat(c.env.initLockFile); os.IsNotExist(err) {
+	if !fs.IsExist(c.env.initLockFile) {
 		c.env.firstRun = true
 
-		if err = os.MkdirAll(path.Clean(c.Node.DataDir), os.ModePerm); err != nil {
-			panic("Setup config error:" + err.Error())
-		}
-
-		f, err := os.OpenFile(c.env.initLockFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		f, err := fs.MustOpen(c.env.initLockFile)
 		if err != nil {
 			panic("Setup config error:" + err.Error())
 		}
 		defer f.Close()
 		_, _ = f.WriteString("LOCK")
 	}
-
 }
 
 func (c *Config) Env() ServerEnv {
@@ -110,7 +106,9 @@ func (c *Config) Env() ServerEnv {
 }
 
 func newConfigEntity() *Config {
-	return new(Config)
+	return &Config{
+		env: &env{},
+	}
 }
 
 func bindServerFromArgs(cfg *Config, args ...string) error {
@@ -118,49 +116,49 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 		return errors.New("invalid program args")
 	}
 
-	fs := flag.NewFlagSet("server", flag.ExitOnError)
+	f := flag.NewFlagSet("server", flag.ExitOnError)
 
-	fs.Usage = func() {
-		fmt.Fprint(fs.Output(), serverUsage)
-		fs.PrintDefaults()
+	f.Usage = func() {
+		fmt.Fprint(f.Output(), serverUsage)
+		f.PrintDefaults()
 	}
 
-	fs.StringVar(&cfg.env.configFile, "config-file", "", "config file path")
+	f.StringVar(&cfg.env.configFile, "config-file", "", "config file path")
 
 	// main config::node
-	fs.StringVar(&cfg.Node.ID, "node-id", "", "unique node id")
-	fs.StringVar(&cfg.Node.DataDir, "data-dir", DefaultNodeDataDir, "path to the data dir")
-	fs.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
-	fs.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
-	fs.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
-	fs.BoolVar(&cfg.Node.RequestsMerged, "requests-merged", DefaultNodeRequestsMerged, "enable raft apply log requests merged")
+	f.StringVar(&cfg.Node.ID, "node-id", "", "unique node id")
+	f.StringVar(&cfg.Node.DataDir, "data-dir", DefaultNodeDataDir, "path to the data dir")
+	f.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
+	f.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
+	f.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
+	f.BoolVar(&cfg.Node.RequestsMerged, "requests-merged", DefaultNodeRequestsMerged, "enable raft apply log requests merged")
 	// main config::store
-	fs.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
+	f.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
 	// main config::store::nuts
-	fs.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "node-id in the system")
-	fs.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "enable sync write")
-	fs.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "enable strict mode")
-	fs.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
+	f.Int64Var(&cfg.Store.Nuts.NodeNum, "nuts-node-num", DefaultStoreNutsNodeNum, "node-id in the system")
+	f.BoolVar(&cfg.Store.Nuts.Sync, "nuts-sync", DefaultStoreNutsSync, "enable sync write")
+	f.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "enable strict mode")
+	f.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
 
 	// main config::cluster
-	fs.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
+	f.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
 
 	// main config::cluster::bootstrap(s)
 	// in cli: node-1@peer_addr,node-2@peer_addr
-	fs.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
+	f.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
 
 	// main config::log
-	fs.Var(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "logger", "")
-	fs.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
+	f.Var(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "logger", "")
+	f.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
 
 	// main config::misc
-	fs.BoolVar(&cfg.Misc.PPROF, "d-pprof", false, "")
+	f.BoolVar(&cfg.Misc.PPROF, "d-pprof", false, "")
 
 	// main config::auth
-	fs.StringVar(&cfg.Auth.Token, "auth-token", "", "")
+	f.StringVar(&cfg.Auth.Token, "auth-token", "", "")
 
-	return fs.Parse(args)
+	return f.Parse(args)
 }
 
 func bindServerFromEnv(cfg *Config) {
@@ -218,8 +216,6 @@ func ReadFromArgs(args ...string) (*Config, error) {
 		return nil, errors.New("no subcommand provided")
 	}
 
-	defer cfg.setupEnv()
-
 	switch args[0] {
 	case "server":
 		if err := bindServerFromArgs(cfg, args[1:]...); err != nil {
@@ -243,7 +239,6 @@ func ReadFromArgs(args ...string) (*Config, error) {
 
 func ReadFromPath(path string) (*Config, error) {
 	cfg := newConfigEntity()
-	defer cfg.setupEnv()
 	if err := bindFromConfigFile(cfg, path); err != nil {
 		return nil, err
 	}
@@ -252,12 +247,17 @@ func ReadFromPath(path string) (*Config, error) {
 
 func ReadFromEnv() *Config {
 	cfg := newConfigEntity()
-	defer cfg.setupEnv()
 	bindServerFromEnv(cfg)
 	return cfg
 }
 
 func New(args ...string) (cfg *Config, err error) {
+	defer func() {
+		if err == nil {
+			cfg.setupEnv()
+		}
+	}()
+
 	configPath := DefaultConfigPath
 
 	cfg = ReadFromEnv()

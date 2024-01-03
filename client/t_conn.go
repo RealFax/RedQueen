@@ -6,14 +6,15 @@ import (
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"math/big"
 	"sync"
 	"sync/atomic"
 )
 
 type Conn interface {
-	ReadOnly() (*GrpcPoolConn, error)
-	WriteOnly() (*GrpcPoolConn, error)
+	ReadOnly() (*grpc.ClientConn, error)
+	WriteOnly() (*grpc.ClientConn, error)
 	Close() error
 }
 
@@ -21,8 +22,8 @@ type clientConn struct {
 	state     atomic.Bool
 	mu        sync.Mutex
 	ctx       context.Context
-	writeOnly *GrpcPool
-	readOnly  map[string]*GrpcPool
+	writeOnly *ConnectionManager
+	readOnly  map[string]*ConnectionManager
 
 	endpoints []string
 }
@@ -49,8 +50,7 @@ func (c *clientConn) listenLeader() {
 	wg := sync.WaitGroup{}
 	wg.Add(len(c.readOnly))
 
-	finalTry := func(conn *GrpcPoolConn) {
-		defer conn.Release()
+	finalTry := func(conn *grpc.ClientConn) {
 		var (
 			err     error
 			monitor serverpb.RedQueen_LeaderMonitorClient
@@ -59,7 +59,7 @@ func (c *clientConn) listenLeader() {
 		)
 
 		// make a preliminary check of to conn
-		xResp, xErr := call.RaftState(c.ctx, &serverpb.RaftStateRequest{})
+		xResp, xErr := call.RaftState(c.ctx, &emptypb.Empty{})
 		if xErr == nil {
 			if xResp.State == serverpb.RaftState_leader {
 				_ = c.swapLeaderConn(conn.Target())
@@ -98,7 +98,7 @@ func (c *clientConn) listenLeader() {
 	wg.Wait()
 }
 
-func (c *clientConn) ReadOnly() (*GrpcPoolConn, error) {
+func (c *clientConn) ReadOnly() (*grpc.ClientConn, error) {
 	size := len(c.readOnly)
 	if size == 0 {
 		return nil, errors.New("read-only not maintained")
@@ -125,7 +125,7 @@ func (c *clientConn) ReadOnly() (*GrpcPoolConn, error) {
 	return nil, errors.New("unexpected")
 }
 
-func (c *clientConn) WriteOnly() (*GrpcPoolConn, error) {
+func (c *clientConn) WriteOnly() (*grpc.ClientConn, error) {
 	if c.writeOnly == nil {
 		return nil, errors.New("write-only not maintained")
 	}
@@ -160,27 +160,27 @@ func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOpt
 		state:     atomic.Bool{},
 		ctx:       ctx,
 		writeOnly: nil,
-		readOnly:  make(map[string]*GrpcPool),
+		readOnly:  make(map[string]*ConnectionManager),
 		endpoints: endpoints,
 	}
 	cc.state.Store(true)
 
 	var (
-		err  error
-		pool *GrpcPool
+		err     error
+		manager *ConnectionManager
 	)
 
 	// init
 	for _, endpoint := range endpoints {
-		if pool, err = NewGrpcPool(
+		if manager, err = NewConnectionManager(
 			ctx,
 			endpoint,
-			int(atomic.LoadInt64(&grpcPoolSize)),
+			int(atomic.LoadInt64(&maxOpenConn)),
 			opts...,
 		); err != nil {
 			return nil, err
 		}
-		cc.readOnly[endpoint] = pool
+		cc.readOnly[endpoint] = manager
 	}
 
 	// start listen

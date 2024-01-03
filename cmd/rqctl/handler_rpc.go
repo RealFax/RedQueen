@@ -68,6 +68,10 @@ func RPCGet(c *cli.Context) error {
 		return err
 	}
 
+	if value.Key != nil {
+		fmt.Printf("Key: %s\n", client.BString(value.Key))
+	}
+
 	if value.TTL == 0 {
 		fmt.Println("TTL: never")
 		goto Output
@@ -75,11 +79,7 @@ func RPCGet(c *cli.Context) error {
 	fmt.Printf("TTL: %d second\n", value.TTL)
 
 Output:
-	if utf8.FullRune(value.Data) {
-		fmt.Printf("Data: %s\n", value.Data)
-		return nil
-	}
-	fmt.Printf("Data: %x\n", value.Data)
+	fmt.Printf("Data: %s\n", client.BString(value.Data))
 	return nil
 }
 
@@ -106,17 +106,17 @@ func RPCPrefixScan(c *cli.Context) error {
 	}
 
 	for _, entry := range entries {
+		if entry.Key != nil {
+			fmt.Printf("Key: %s, ", client.BString(entry.Key))
+		}
+
 		if entry.TTL == 0 {
-			fmt.Print("TTL: never")
+			fmt.Print("TTL: never, ")
 			goto Output
 		}
-		fmt.Printf("TTL: %d second", entry.TTL)
+		fmt.Printf("TTL: %d second, ", entry.TTL)
 	Output:
-		if utf8.FullRune(entry.Data) {
-			fmt.Printf(", Data: %s\n", entry.Data)
-			continue
-		}
-		fmt.Printf(", Data: %x\n", entry.Data)
+		fmt.Printf("Data: %s\n", client.BString(entry.Data))
 	}
 	return nil
 }

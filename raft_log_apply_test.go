@@ -3,6 +3,7 @@ package red_test
 import (
 	"bytes"
 	"context"
+	"github.com/RealFax/RedQueen/pkg/collapsar"
 	"io"
 	"strconv"
 	"testing"
@@ -13,7 +14,6 @@ import (
 
 	red "github.com/RealFax/RedQueen"
 	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 var raftLogPayloadMessage = &serverpb.RaftLogPayload{

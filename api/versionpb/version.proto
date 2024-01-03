@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package versionpb;
 
+option go_package = "./;versionpb";
+
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MessageOptions {

@@ -2,9 +2,8 @@ package collapsar_test
 
 import (
 	"bytes"
+	"github.com/RealFax/RedQueen/pkg/collapsar"
 	"testing"
-
-	"github.com/RealFax/RedQueen/internal/collapsar"
 )
 
 func TestWriter_Encode(t *testing.T) {

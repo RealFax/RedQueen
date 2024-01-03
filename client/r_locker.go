@@ -22,7 +22,6 @@ func (c *lockerClient) Lock(ctx context.Context, lockID string, ttl int32) error
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.Lock(ctx, &serverpb.LockRequest{
 		LockId: lockID,
@@ -36,7 +35,6 @@ func (c *lockerClient) Unlock(ctx context.Context, lockID string) error {
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.Unlock(ctx, &serverpb.UnlockRequest{
 		LockId: lockID,
@@ -49,7 +47,6 @@ func (c *lockerClient) TryLock(ctx context.Context, lockID string, ttl int32, de
 	if err != nil {
 		return err
 	}
-	defer client.conn.Release()
 
 	_, err = client.instance.TryLock(ctx, &serverpb.TryLockRequest{
 		LockId:   lockID,
