@@ -146,13 +146,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			if !cfg.Env().FirstRun() {
 				return nil
 			}
-			clusters := make([]raft.Server, len(cfg.Cluster.Bootstrap))
-			for i, v := range cfg.Cluster.Bootstrap {
-				clusters[i] = raft.Server{
+			clusters := make([]raft.Server, 0, len(cfg.Cluster.Bootstrap))
+			for _, node := range cfg.Cluster.Bootstrap {
+				clusters = append(clusters, raft.Server{
 					Suffrage: raft.Voter,
-					ID:       raft.ServerID(v.Name),
-					Address:  raft.ServerAddress(v.PeerAddr),
-				}
+					ID:       raft.ServerID(node.Name),
+					Address:  raft.ServerAddress(node.PeerAddr),
+				})
 			}
 			return clusters
 		}(),
