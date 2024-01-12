@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type Conn interface {
@@ -28,7 +29,7 @@ type clientConn struct {
 	endpoints []string
 }
 
-func (c *clientConn) swapLeaderConn(new string) error {
+func (c *clientConn) swapLeader(new string) error {
 	c.mu.Lock()
 
 	if c.writeOnly != nil {
@@ -46,41 +47,41 @@ func (c *clientConn) swapLeaderConn(new string) error {
 	return nil
 }
 
-func (c *clientConn) listenLeader() {
+func (c *clientConn) leaderWatcher() {
 	wg := sync.WaitGroup{}
 	wg.Add(len(c.readOnly))
 
-	finalTry := func(conn *grpc.ClientConn) {
+	leaderIter := func(conn *grpc.ClientConn) {
 		var (
-			err     error
 			monitor serverpb.RedQueen_LeaderMonitorClient
-			resp    *serverpb.LeaderMonitorResponse
+			mAck    *serverpb.LeaderMonitorResponse
 			call    = serverpb.NewRedQueenClient(conn)
 		)
 
 		// make a preliminary check of to conn
-		xResp, xErr := call.RaftState(c.ctx, &emptypb.Empty{})
-		if xErr == nil {
-			if xResp.State == serverpb.RaftState_leader {
-				_ = c.swapLeaderConn(conn.Target())
-			}
-			wg.Done()
+		ack, err := call.RaftState(c.ctx, &emptypb.Empty{})
+		if err == nil && ack.State == serverpb.RaftState_leader {
+			_ = c.swapLeader(conn.Target())
 		}
 
+		wg.Done() // wait group have done first
+
+		// ---- leader long watcher ----
 		for {
 			select {
 			case <-c.ctx.Done():
 				return
 			default:
 				if monitor, err = call.LeaderMonitor(c.ctx, &serverpb.LeaderMonitorRequest{}); err != nil {
+					time.Sleep(time.Millisecond * 100)
 					continue
 				}
 				for {
-					if resp, err = monitor.Recv(); err != nil {
-						continue
+					if mAck, err = monitor.Recv(); err != nil {
+						break
 					}
-					if resp.Leader {
-						_ = c.swapLeaderConn(conn.Target())
+					if mAck.Leader {
+						_ = c.swapLeader(conn.Target())
 					}
 				}
 			}
@@ -92,7 +93,7 @@ func (c *clientConn) listenLeader() {
 		if err != nil {
 			panic(err)
 		}
-		go finalTry(cc)
+		go leaderIter(cc)
 	}
 
 	wg.Wait()
@@ -175,7 +176,7 @@ func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOpt
 		if manager, err = NewConnectionManager(
 			ctx,
 			endpoint,
-			int(atomic.LoadInt64(&maxOpenConn)),
+			int(atomic.LoadInt64(&maxOpenConn)+1), // include leader watcher alloc
 			opts...,
 		); err != nil {
 			return nil, err
@@ -184,7 +185,7 @@ func NewClientConn(ctx context.Context, endpoints []string, opts ...grpc.DialOpt
 	}
 
 	// start listen
-	cc.listenLeader()
+	cc.leaderWatcher()
 
 	return cc, nil
 }
