@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 )
 
-func (s *Store) _namespace(namespace string) (*Store, error) {
+func (s *DB) swap(namespace string) (*DB, error) {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return nil, ErrStateBreak
 	}
@@ -19,27 +19,27 @@ func (s *Store) _namespace(namespace string) (*Store, error) {
 		return s, nil
 		// return nil, errors.New("conflicts with the current namespace")
 	}
-	return &Store{
+	return &DB{
 		state:        s.state,
 		db:           s.db,
 		watcher:      s.watcher,
-		watcherChild: s.watcher.Namespace(namespace),
+		watcherChild: s.watcher.UseTarget(namespace),
 		namespace:    namespace,
 	}, nil
 }
 
-func (s *Store) State() uint32 {
+func (s *DB) State() uint32 {
 	return atomic.LoadUint32(s.state)
 }
 
-func (s *Store) DB() (*nutsdb.DB, error) {
+func (s *DB) DB() (*nutsdb.DB, error) {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return nil, ErrStateBreak
 	}
 	return s.db.Load(), nil
 }
 
-func (s *Store) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) error {
+func (s *DB) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -65,7 +65,7 @@ func (s *Store) Transaction(writable bool, fn func(tx *nutsdb.Tx) error) error {
 	return nil
 }
 
-func (s *Store) Begin(writable bool) (*nutsdb.Tx, error) {
+func (s *DB) Begin(writable bool) (*nutsdb.Tx, error) {
 	db, err := s.DB()
 	if err != nil {
 		return nil, err
@@ -73,8 +73,8 @@ func (s *Store) Begin(writable bool) (*nutsdb.Tx, error) {
 	return db.Begin(writable)
 }
 
-func (s *Store) Get(key []byte) (*store.Value, error) {
-	val := store.NewValue(nil)
+func (s *DB) Get(key []byte) (*store.Value, error) {
+	val := &store.Value{}
 	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
 		entry, err := tx.Get(s.namespace, key)
 		if err != nil {
@@ -91,7 +91,7 @@ func (s *Store) Get(key []byte) (*store.Value, error) {
 	})
 }
 
-func (s *Store) PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*store.Value, error) {
+func (s *DB) PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*store.Value, error) {
 	val := make([]*store.Value, 0, limit-offset)
 	return val, s.Transaction(false, func(tx *nutsdb.Tx) error {
 		var (
@@ -120,11 +120,11 @@ func (s *Store) PrefixSearchScan(prefix []byte, reg string, offset, limit int) (
 	})
 }
 
-func (s *Store) PrefixScan(prefix []byte, offset, limit int) ([]*store.Value, error) {
+func (s *DB) PrefixScan(prefix []byte, offset, limit int) ([]*store.Value, error) {
 	return s.PrefixSearchScan(prefix, "", offset, limit)
 }
 
-func (s *Store) SetWithTTL(key, value []byte, ttl uint32) error {
+func (s *DB) SetWithTTL(key, value []byte, ttl uint32) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		if err := tx.Put(s.namespace, key, value, ttl); err != nil {
 			return err
@@ -135,11 +135,11 @@ func (s *Store) SetWithTTL(key, value []byte, ttl uint32) error {
 	})
 }
 
-func (s *Store) Set(key, value []byte) error {
+func (s *DB) Set(key, value []byte) error {
 	return s.SetWithTTL(key, value, 0)
 }
 
-func (s *Store) TrySetWithTTL(key, value []byte, ttl uint32) error {
+func (s *DB) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		_, err := tx.Get(s.namespace, key)
 		if err == nil {
@@ -156,11 +156,11 @@ func (s *Store) TrySetWithTTL(key, value []byte, ttl uint32) error {
 	})
 }
 
-func (s *Store) TrySet(key, value []byte) error {
+func (s *DB) TrySet(key, value []byte) error {
 	return s.TrySetWithTTL(key, value, 0)
 }
 
-func (s *Store) Del(key []byte) error {
+func (s *DB) Del(key []byte) error {
 	return s.Transaction(true, func(tx *nutsdb.Tx) error {
 		if err := tx.Delete(s.namespace, key); err != nil {
 			return err
@@ -170,7 +170,7 @@ func (s *Store) Del(key []byte) error {
 	})
 }
 
-func (s *Store) Watch(key []byte) (store.WatcherNotify, error) {
+func (s *DB) Watch(key []byte) (store.Watcher, error) {
 	if strictMode.Load() {
 		// check watch key does it exist
 		if err := s.Transaction(false, func(tx *nutsdb.Tx) error {
@@ -183,25 +183,24 @@ func (s *Store) Watch(key []byte) (store.WatcherNotify, error) {
 	return s.watcherChild.Watch(key), nil
 }
 
-func (s *Store) WatchPrefix(prefix []byte) store.WatcherNotify {
+func (s *DB) WatchPrefix(prefix []byte) store.Watcher {
 	// prefix watch strict mode is disabled
 	return s.watcherChild.WatchPrefix(prefix)
 }
 
-func (s *Store) GetNamespace() string {
+func (s *DB) Current() string {
 	return s.namespace
 }
 
-func (s *Store) Namespace(namespace string) (store.Namespace, error) {
-	n, err := s._namespace(namespace)
+func (s *DB) Swap(namespace string) (store.Actions, error) {
+	n, err := s.swap(namespace)
 	if err != nil {
 		return nil, err
 	}
-	_ = n.SetWithTTL(initBucketKey, nil, 4) // init bucket
-	return n, nil
+	return n, n.SetWithTTL(KeyInitBucket, nil, 1)
 }
 
-func (s *Store) Close() error {
+func (s *DB) Close() error {
 	db, err := s.DB()
 	if err != nil {
 		return err
@@ -210,7 +209,7 @@ func (s *Store) Close() error {
 	return db.Close()
 }
 
-func (s *Store) Snapshot() (io.Reader, error) {
+func (s *DB) Snapshot() (io.Reader, error) {
 	// get db session first
 	db, err := s.DB()
 	if err != nil {
@@ -235,7 +234,7 @@ func (s *Store) Snapshot() (io.Reader, error) {
 	})
 }
 
-func (s *Store) Break(ctx context.Context) error {
+func (s *DB) Break(ctx context.Context) error {
 	if atomic.LoadUint32(s.state) == StateBreak {
 		return ErrStateBreak
 	}
@@ -255,7 +254,7 @@ func (s *Store) Break(ctx context.Context) error {
 	return nil
 }
 
-func (s *Store) Restore(src io.Reader) (err error) {
+func (s *DB) Restore(src io.Reader) (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err = s.Break(ctx); err != nil {

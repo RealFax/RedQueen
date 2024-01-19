@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type Value struct {
@@ -12,8 +13,12 @@ type Value struct {
 	Data      []byte
 }
 
-func NewValue(data []byte) *Value {
-	return &Value{Data: data}
+func (v *Value) GetTimestampAsTime() time.Time {
+	return time.Unix(int64(v.Timestamp), 0)
+}
+
+func (v *Value) GetTTLAsDuration() time.Duration {
+	return time.Second * time.Duration(v.TTL)
 }
 
 type WatchValue struct {
@@ -29,13 +34,13 @@ func (v *WatchValue) Deleted() bool {
 	return v.Value == nil
 }
 
-type WatcherNotify interface {
+type Watcher interface {
 	Notify() chan *WatchValue
 	Close() error
 }
 
-type Base interface {
-	GetNamespace() string
+type Actions interface {
+	Current() string
 	Get(key []byte) (value *Value, err error)
 	PrefixSearchScan(prefix []byte, reg string, offset, limit int) ([]*Value, error)
 	PrefixScan(prefix []byte, offset, limit int) ([]*Value, error)
@@ -45,15 +50,13 @@ type Base interface {
 	// TrySet try to set a key-value, returns an error if the key already exists
 	TrySet(key, value []byte) error
 	Del(key []byte) error
-	Watch(key []byte) (notify WatcherNotify, err error)
-	WatchPrefix(prefix []byte) WatcherNotify
+	Watch(key []byte) (notify Watcher, err error)
+	WatchPrefix(prefix []byte) Watcher
 }
 
-type Namespace Base
-
 type Store interface {
-	Base
-	Namespace(namespace string) (Namespace, error)
+	Actions
+	Swap(namespace string) (Actions, error)
 	Close() error
 	// Snapshot should be in tar & gzip format
 	Snapshot() (io.Reader, error)

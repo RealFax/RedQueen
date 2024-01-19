@@ -3,6 +3,7 @@ package red
 import (
 	"bytes"
 	"context"
+	"github.com/RealFax/RedQueen/internal/dlocker"
 	"github.com/pkg/errors"
 	"net"
 	"sync"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/RealFax/RedQueen/api/serverpb"
 	"github.com/RealFax/RedQueen/config"
-	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 )
 
@@ -29,7 +29,7 @@ type Server struct {
 	cfg *config.Config
 
 	store         store.Store
-	lockerBackend locker.Backend
+	lockerBackend dlocker.Backend
 	logApplyer    RaftApply
 
 	raft        *Raft
@@ -43,19 +43,19 @@ type Server struct {
 	serverpb.UnimplementedRedQueenServer
 }
 
-func (s *Server) namespace(namespace *string) (store.Namespace, error) {
+func (s *Server) trySwapContext(namespace *string) (store.Actions, error) {
 	var (
-		err      error
-		storeAPI store.Namespace = s.store
+		err     error
+		actions store.Actions = s.store
 	)
 
 	if namespace != nil {
-		if storeAPI, err = s.store.Namespace(*namespace); err != nil {
+		if actions, err = s.store.Swap(*namespace); err != nil {
 			return nil, err
 		}
 	}
 
-	return storeAPI, nil
+	return actions, nil
 }
 
 func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeout time.Duration) error {
@@ -123,7 +123,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		go server.pprofServer.Run()
 	}
 
-	// init server store backend
+	// init server actions backend
 	if server.store, err = newStoreBackend(cfg.Store, cfg.Node.DataDir); err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	// init distributed lock backend
-	if server.lockerBackend, err = NewLockerBackend(server.store, server.applyLog); err != nil {
+	if server.lockerBackend, err = dlocker.NewLockerBackend(server.store, server.applyLog); err != nil {
 		return nil, errors.Wrap(err, "NewServer")
 	}
 

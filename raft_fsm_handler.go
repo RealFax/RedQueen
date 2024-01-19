@@ -11,15 +11,15 @@ type FSMHandlers struct {
 	store store.Store
 }
 
-func (h *FSMHandlers) namespace(namespace *string) (store.Namespace, error) {
+func (h *FSMHandlers) swap(namespace *string) (store.Actions, error) {
 	if namespace == nil {
 		return h.store, nil
 	}
-	storeAPI, err := h.store.Namespace(*namespace)
+	actions, err := h.store.Swap(*namespace)
 	if err != nil {
-		return nil, errors.Wrap(err, "namespace with error")
+		return nil, errors.Wrap(err, "swap with error")
 	}
-	return storeAPI, nil
+	return actions, nil
 }
 
 func (h *FSMHandlers) SetWithTTL(payload *serverpb.RaftLogPayload) error {
@@ -27,7 +27,7 @@ func (h *FSMHandlers) SetWithTTL(payload *serverpb.RaftLogPayload) error {
 		return errors.New("invalid SetWithTTl args")
 	}
 
-	dest, err := h.namespace(payload.Namespace)
+	dest, err := h.swap(payload.Namespace)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (h *FSMHandlers) TrySetWithTTL(payload *serverpb.RaftLogPayload) error {
 		return errors.New("invalid TrySetWithTTL args")
 	}
 
-	dest, err := h.namespace(payload.Namespace)
+	dest, err := h.swap(payload.Namespace)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (h *FSMHandlers) Set(payload *serverpb.RaftLogPayload) error {
 		return errors.New("invalid Set args")
 	}
 
-	dest, err := h.namespace(payload.Namespace)
+	dest, err := h.swap(payload.Namespace)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (h *FSMHandlers) TrySet(payload *serverpb.RaftLogPayload) error {
 		return errors.New("invalid TrySet args")
 	}
 
-	dest, err := h.namespace(payload.Namespace)
+	dest, err := h.swap(payload.Namespace)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (h *FSMHandlers) Del(payload *serverpb.RaftLogPayload) error {
 		return errors.New("invalid Del args")
 	}
 
-	dest, err := h.namespace(payload.Namespace)
+	dest, err := h.swap(payload.Namespace)
 	if err != nil {
 		return err
 	}

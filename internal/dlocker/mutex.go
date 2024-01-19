@@ -1,11 +1,10 @@
-package locker
+package dlocker
 
 import (
 	"errors"
 	"github.com/RealFax/RedQueen/internal/hack"
-	"time"
-
 	"github.com/RealFax/RedQueen/store"
+	"time"
 )
 
 func MutexLock(lockID string, ttl int32, backend Backend) error {

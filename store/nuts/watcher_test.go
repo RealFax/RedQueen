@@ -28,7 +28,7 @@ var (
 func TestWatcher(t *testing.T) {
 	watcher := &nuts.Watcher{}
 
-	child := watcher.Namespace("RedQueen")
+	child := watcher.UseTarget("RedQueen")
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -44,7 +44,7 @@ func TestWatcher(t *testing.T) {
 			for {
 				select {
 				case val := <-notify.Values:
-					t.Logf("ClientID: %d, Seq: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
+					t.Logf("ClientID: %d, sequence: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
 						clientID,
 						val.Seq,
 						val.Timestamp,
@@ -53,7 +53,7 @@ func TestWatcher(t *testing.T) {
 						*val.Value,
 					)
 				case val := <-prefixNotify.Values:
-					t.Logf("[Prefix] ClientID: %d, Seq: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
+					t.Logf("[Prefix] ClientID: %d, sequence: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
 						clientID,
 						val.Seq,
 						val.Timestamp,

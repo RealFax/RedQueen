@@ -38,7 +38,7 @@ func newStoreBackend(cfg config.Store, dir string) (store.Store, error) {
 		config.StoreBackendNuts: newNutsStore,
 	}[cfg.Backend]
 	if !ok {
-		return nil, errors.New("unsupported store backend")
+		return nil, errors.New("unsupported actions backend")
 	}
 	return handle(cfg, dir)
 }

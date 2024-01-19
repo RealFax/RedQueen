@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	initBucketKey = []byte("_init_key")
+	KeyInitBucket = []byte("_init_key")
 	ErrStateBreak = errors.New("state break")
 )
 
@@ -49,7 +49,7 @@ type Config struct {
 	RWMode  RWMode
 }
 
-type Store struct {
+type DB struct {
 	state *uint32 // atomic
 
 	db      *atomic.Pointer[nutsdb.DB]
@@ -84,12 +84,12 @@ func New(cfg Config) (store.Store, error) {
 	dbPtr := atomic.Pointer[nutsdb.DB]{}
 	dbPtr.Store(db)
 
-	return &Store{
+	return &DB{
 		state:        new(uint32),
 		db:           &dbPtr,
 		options:      opts,
 		watcher:      rootWatcher,
-		watcherChild: rootWatcher.Namespace(store.DefaultNamespace),
+		watcherChild: rootWatcher.UseTarget(store.DefaultNamespace),
 		namespace:    store.DefaultNamespace,
 		dataDir:      cfg.DataDir,
 	}, nil

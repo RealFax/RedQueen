@@ -2,6 +2,7 @@ package red
 
 import (
 	"context"
+	"github.com/RealFax/RedQueen/internal/dlocker"
 	"github.com/RealFax/RedQueen/pkg/fs"
 	"github.com/google/uuid"
 	"github.com/hashicorp/raft"
@@ -13,7 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
-	"github.com/RealFax/RedQueen/locker"
 	"github.com/RealFax/RedQueen/store"
 )
 
@@ -72,7 +72,7 @@ func (s *Server) Set(ctx context.Context, req *serverpb.SetRequest) (*serverpb.S
 }
 
 func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.GetResponse, error) {
-	storeAPI, err := s.namespace(req.Namespace)
+	storeAPI, err := s.trySwapContext(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -90,7 +90,7 @@ func (s *Server) Get(_ context.Context, req *serverpb.GetRequest) (*serverpb.Get
 }
 
 func (s *Server) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequest) (*serverpb.PrefixScanResponse, error) {
-	storeAPI, err := s.namespace(req.Namespace)
+	storeAPI, err := s.trySwapContext(req.Namespace)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -158,7 +158,7 @@ func (s *Server) Delete(ctx context.Context, req *serverpb.DeleteRequest) (*serv
 }
 
 func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServer) error {
-	storeAPI, err := s.namespace(req.Namespace)
+	storeAPI, err := s.trySwapContext(req.Namespace)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -201,7 +201,7 @@ func (s *Server) Watch(req *serverpb.WatchRequest, stream serverpb.KV_WatchServe
 }
 
 func (s *Server) WatchPrefix(req *serverpb.WatchPrefixRequest, stream serverpb.KV_WatchPrefixServer) error {
-	storeAPI, err := s.namespace(req.Namespace)
+	storeAPI, err := s.trySwapContext(req.Namespace)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -231,22 +231,22 @@ func (s *Server) WatchPrefix(req *serverpb.WatchPrefixRequest, stream serverpb.K
 }
 
 func (s *Server) Lock(_ context.Context, req *serverpb.LockRequest) (*serverpb.LockResponse, error) {
-	if err := locker.MutexLock(req.LockId, req.Ttl, s.lockerBackend); err != nil {
+	if err := dlocker.MutexLock(req.LockId, req.Ttl, s.lockerBackend); err != nil {
 		return nil, status.Error(codes.AlreadyExists, err.Error())
 	}
 	return &serverpb.LockResponse{Header: s.responseHeader()}, nil
 }
 
 func (s *Server) Unlock(_ context.Context, req *serverpb.UnlockRequest) (*serverpb.UnlockResponse, error) {
-	if err := locker.MutexUnlock(req.LockId, s.lockerBackend); err != nil {
+	if err := dlocker.MutexUnlock(req.LockId, s.lockerBackend); err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &serverpb.UnlockResponse{Header: s.responseHeader()}, nil
 }
 
 func (s *Server) TryLock(_ context.Context, req *serverpb.TryLockRequest) (*serverpb.TryLockResponse, error) {
-	if !locker.MutexTryLock(req.LockId, req.Ttl, req.Deadline, s.lockerBackend) {
-		return nil, status.Error(codes.PermissionDenied, locker.ErrStatusBusy.Error())
+	if !dlocker.MutexTryLock(req.LockId, req.Ttl, req.Deadline, s.lockerBackend) {
+		return nil, status.Error(codes.PermissionDenied, dlocker.ErrStatusBusy.Error())
 	}
 	return &serverpb.TryLockResponse{Header: s.responseHeader()}, nil
 }

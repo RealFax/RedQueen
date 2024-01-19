@@ -85,7 +85,7 @@ func RaftWithBoltLogStore(path string) RaftServerOption {
 	return func(r *Raft) (err error) {
 		r.logStore, err = raftboltdb.NewBoltStore(path)
 		if err != nil {
-			return errors.Wrap(err, "bolt-log-store")
+			return errors.Wrap(err, "bolt-log-actions")
 		}
 		return
 	}
@@ -95,7 +95,7 @@ func RaftWithStdStableStore(store store.Store) RaftServerOption {
 	return func(r *Raft) (err error) {
 		r.stableStore, err = NewStableStore(store)
 		if err != nil {
-			return errors.Wrap(err, "std-stable-store")
+			return errors.Wrap(err, "std-stable-actions")
 		}
 		return
 	}
@@ -105,7 +105,7 @@ func RaftWithFileSnapshotStore(path string, retain int, logOut io.Writer) RaftSe
 	return func(r *Raft) (err error) {
 		r.snapshotStore, err = raft.NewFileSnapshotStore(path, retain, logOut)
 		if err != nil {
-			return errors.Wrap(err, "file-snapshot-store")
+			return errors.Wrap(err, "file-snapshot-actions")
 		}
 		return
 	}

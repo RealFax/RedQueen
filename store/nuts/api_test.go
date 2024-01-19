@@ -141,7 +141,7 @@ func TestStoreAPI_Watch(t *testing.T) {
 		for {
 			select {
 			case val := <-notify.Notify():
-				t.Logf("Seq: %d, Timestamp: %d, Value: %s", val.Seq, val.Timestamp, *val.Value)
+				t.Logf("sequence: %d, Timestamp: %d, Value: %s", val.Seq, val.Timestamp, *val.Value)
 			case <-ctx.Done():
 				t.Log("[+] End watch")
 				notify.Close()
@@ -169,12 +169,12 @@ func TestStoreAPI_Watch(t *testing.T) {
 }
 
 func TestStoreAPI_Namespace(t *testing.T) {
-	t.Logf("current namespace: %s", db.GetNamespace())
-	namespace, err := db.Namespace("NextNamespace")
+	t.Logf("current namespace: %s", db.Current())
+	namespace, err := db.Swap("NextNamespace")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("current namespace: %s", namespace.GetNamespace())
+	t.Logf("current namespace: %s", namespace.Current())
 }
 
 func TestStoreAPI_Snapshot(t *testing.T) {
