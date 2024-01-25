@@ -4,7 +4,7 @@
 package maputil
 
 import (
-	"github.com/RealFax/RedQueen/internal/hack"
+	"github.com/RealFax/RedQueen/pkg/hack"
 	json "github.com/json-iterator/go"
 	"sync"
 )

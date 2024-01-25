@@ -4,12 +4,12 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/RealFax/RedQueen/pkg/client"
+	"github.com/RealFax/RedQueen/pkg/hack"
 	"log"
 	"time"
 	"unicode/utf8"
 
-	"github.com/RealFax/RedQueen/client"
-	"github.com/RealFax/RedQueen/internal/hack"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )

@@ -4,26 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/RealFax/RedQueen/internal/version"
+	client2 "github.com/RealFax/RedQueen/pkg/client"
 	"net/netip"
 	"os"
 	"strings"
 	"syscall"
 
-	red "github.com/RealFax/RedQueen"
-	"github.com/RealFax/RedQueen/client"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
-	version  = "v0.0.1"
 	helpText = `put the endpoint info into the environment variable: RQ_ENDPOINTS
-	format: 172.16.0.100:5230,172.16.0.101:5230,172.16.0.102:5230`
+	format: 172.16.0.100:5230,172.16.0.101:5230,172.16.0.102:5230
+`
 )
 
 var (
-	invoker *client.Client
+	invoker *client2.Client
 )
 
 func dialRQ() error {
@@ -47,8 +47,8 @@ func dialRQ() error {
 		endpoints[i] = addr
 	}
 
-	client.SetMaxOpenConn(1)
-	if invoker, err = client.New(
+	client2.SetMaxOpenConn(1)
+	if invoker, err = client2.New(
 		context.Background(),
 		endpoints,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -61,11 +61,11 @@ func dialRQ() error {
 func main() {
 
 	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Printf("rqctl version: %s\nRedQueen client version: %s", version, red.Version)
+		fmt.Print(version.String())
 	}
 	app := &cli.App{
 		Name:      "rqctl",
-		Version:   fmt.Sprintf("\trqctl: %s\n\tRedQueen client: %s", version, red.Version),
+		Version:   version.String(),
 		Usage:     "cli client for RedQueen 🤖",
 		UsageText: helpText,
 		Commands: []*cli.Command{
