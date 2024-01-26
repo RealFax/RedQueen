@@ -5,12 +5,14 @@ import (
 	"context"
 	"github.com/RealFax/RedQueen/internal/rqd/store"
 	"github.com/RealFax/RedQueen/pkg/dlocker"
+	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
 	"net"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/hashicorp/raft"
 	"google.golang.org/grpc"
 
 	"github.com/RealFax/RedQueen/api/serverpb"
@@ -24,7 +26,8 @@ var (
 )
 
 type Server struct {
-	clusterID string
+	ctx    context.Context
+	cancel context.CancelCauseFunc
 
 	cfg *config.Config
 
@@ -37,6 +40,8 @@ type Server struct {
 	pprofServer *pprofServer
 
 	stateNotify sync.Map // map[string]chan bool
+
+	clusterID string
 
 	serverpb.UnimplementedKVServer
 	serverpb.UnimplementedLockerServer
@@ -77,6 +82,8 @@ func (s *Server) applyLog(ctx context.Context, p *serverpb.RaftLogPayload, timeo
 func (s *Server) _stateUpdater() {
 	for {
 		select {
+		case <-s.ctx.Done():
+			return
 		case state := <-s.raft.LeaderCh():
 			s.stateNotify.Range(func(_, val any) bool {
 				val.(chan bool) <- state
@@ -95,6 +102,8 @@ func (s *Server) ListenAndServe() error {
 }
 
 func (s *Server) Close() (err error) {
+	s.cancel(errors.New("server close"))
+
 	if err = s.raft.Shutdown().Error(); err != nil {
 		return
 	}
@@ -108,12 +117,13 @@ func (s *Server) Close() (err error) {
 
 func NewServer(cfg *config.Config) (*Server, error) {
 	var (
-		server = Server{
+		err    error
+		server = &Server{
 			clusterID: cfg.Node.ID,
 			cfg:       cfg,
 		}
-		err error
 	)
+	server.ctx, server.cancel = context.WithCancelCause(context.Background())
 
 	if cfg.Misc.PPROF {
 		server.pprofServer, err = newPprofServer()
@@ -130,33 +140,44 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// init server grpc
 	server.grpcServer = grpc.NewServer()
-	serverpb.RegisterKVServer(server.grpcServer, &server)
-	serverpb.RegisterLockerServer(server.grpcServer, &server)
-	serverpb.RegisterRedQueenServer(server.grpcServer, &server)
+	serverpb.RegisterKVServer(server.grpcServer, server)
+	serverpb.RegisterLockerServer(server.grpcServer, server)
+	serverpb.RegisterRedQueenServer(server.grpcServer, server)
 
 	// init server raft
-	if server.raft, err = NewRaft(RaftConfig{
-		Bootstrap:    cfg.Env().FirstRun(),
-		MaxSnapshots: int(cfg.Node.MaxSnapshots),
-		ServerID:     cfg.Node.ID,
-		Addr:         cfg.Node.ListenPeerAddr,
-		DataDir:      cfg.Node.DataDir,
-		Store:        server.store,
-		Clusters: func() []raft.Server {
+	if server.raft, err = NewRaftWithOptions(
+		RaftWithStdFSM(server.store),
+		RaftWithBoltLogStore(filepath.Join(cfg.Node.DataDir, RaftLog)),
+		RaftWithStdStableStore(server.store),
+		RaftWithFileSnapshotStore(cfg.Node.DataDir, int(cfg.Node.MaxSnapshots), os.Stderr),
+		RaftWithTCPTransport(cfg.Node.ListenPeerAddr, 32, 3*time.Second, os.Stderr),
+		RaftWithConfig(func() *raft.Config {
+			c := raft.DefaultConfig()
+			c.LocalID = raft.ServerID(cfg.Node.ID)
+			c.LogLevel = "INFO"
+			return c
+		}()),
+		func() RaftServerOption {
+			if cfg.Env().FirstRun() {
+				return RaftWithBootstrap()
+			}
+			return RaftWithEmpty()
+		}(),
+		RaftWithClusters(func() []raft.Server {
 			if !cfg.Env().FirstRun() {
 				return nil
 			}
-			clusters := make([]raft.Server, 0, len(cfg.Cluster.Bootstrap))
+			cluster := make([]raft.Server, 0, len(cfg.Cluster.Bootstrap))
 			for _, node := range cfg.Cluster.Bootstrap {
-				clusters = append(clusters, raft.Server{
+				cluster = append(cluster, raft.Server{
 					Suffrage: raft.Voter,
 					ID:       raft.ServerID(node.Name),
 					Address:  raft.ServerAddress(node.PeerAddr),
 				})
 			}
-			return clusters
-		}(),
-	}); err != nil {
+			return cluster
+		}()),
+	); err != nil {
 		return nil, errors.Wrap(err, "NewServer")
 	}
 
@@ -170,8 +191,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		server.logApplyer = NewRaftMultipleLogApply(
 			context.Background(),
 			64,
-			time.Millisecond*300,
-			time.Second*3,
+			300*time.Millisecond,
+			3*time.Second,
 			server.raft.Apply,
 		)
 	} else {
@@ -181,5 +202,5 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// start daemon service
 	go server._stateUpdater()
 
-	return &server, nil
+	return server, nil
 }

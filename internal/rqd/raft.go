@@ -4,8 +4,6 @@ import (
 	"github.com/RealFax/RedQueen/internal/rqd/store"
 	"io"
 	"net"
-	"os"
-	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -13,14 +11,6 @@ import (
 	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
 	"github.com/pkg/errors"
 )
-
-type RaftConfig struct {
-	Bootstrap               bool
-	MaxSnapshots            int
-	ServerID, Addr, DataDir string
-	Store                   store.Store
-	Clusters                []raft.Server
-}
 
 type Raft struct {
 	bootstrap bool
@@ -148,27 +138,4 @@ func NewRaftWithOptions(opts ...RaftServerOption) (*Raft, error) {
 	}
 
 	return r, nil
-}
-
-func NewRaft(cfg RaftConfig) (*Raft, error) {
-	return NewRaftWithOptions(
-		RaftWithClusters(cfg.Clusters),
-		RaftWithConfig(func() *raft.Config {
-			raftCfg := raft.DefaultConfig()
-			raftCfg.LocalID = raft.ServerID(cfg.ServerID)
-			raftCfg.LogLevel = "INFO"
-			return raftCfg
-		}()),
-		RaftWithStdFSM(cfg.Store),
-		RaftWithBoltLogStore(filepath.Join(cfg.DataDir, "raft-log.db")),
-		RaftWithStdStableStore(cfg.Store),
-		RaftWithFileSnapshotStore(cfg.DataDir, cfg.MaxSnapshots, os.Stderr),
-		RaftWithTCPTransport(cfg.Addr, 32, time.Second*3, os.Stderr),
-		func() RaftServerOption {
-			if cfg.Bootstrap {
-				return RaftWithBootstrap()
-			}
-			return RaftWithEmpty()
-		}(),
-	)
 }

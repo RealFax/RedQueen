@@ -65,7 +65,7 @@ func (w LockerBackend) Watch(key []byte) (store.Watcher, error) {
 
 func NewLockerBackend(
 	s store.Store,
-	raftApplyFunc func(context.Context, *serverpb.RaftLogPayload, time.Duration) error,
+	apply func(context.Context, *serverpb.RaftLogPayload, time.Duration) error,
 ) (Backend, error) {
 	current, err := s.Swap(Namespace)
 	if err != nil {
@@ -73,6 +73,6 @@ func NewLockerBackend(
 	}
 	return &LockerBackend{
 		actions: current,
-		apply:   raftApplyFunc,
+		apply:   apply,
 	}, nil
 }

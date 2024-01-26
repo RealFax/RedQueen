@@ -1,32 +1,35 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 function walk() {
   local dir="$1"
-	local walkDir="$2"
+  local walk_dir="$2"
 
-    # shellcheck disable=SC2045
-    for f in `ls $1`; do
+    for f in $(ls "$1"); do
 
-    		if [ -f "$dir/$f" ] && [[ $walkDir != "dir" ]] && [[ "$dir/$f" == *".proto" ]]; then
-    			echo "building protobuf: $dir/$f"
-    		    protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative "$dir/$f"
-    		fi
+     if [ -f "$dir/$f" ] && [[ $walk_dir != "dir" ]] && [[ "$dir/$f" == *".proto" ]]; then
+       echo "building protobuf: $dir/$f"
+          protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative "$dir/$f"
+    fi
 
-    		if [ -d "$dir/$f" ]
-    		then
-    			if [[ `ls $dir/$f` == *".proto" ]]; then
-    			    protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $dir/$f/*.proto
-    			else
-    				walk "$dir/$f" "dir"
-    			fi
-    		    echo "building protobuf: $dir/$f"
-    		fi
-    done
+      if [ -d "$dir/$f" ]; then
+       if [[ $(ls $dir/$f) == *".proto" ]]; then
+           protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $dir/$f/*.proto
+      else
+        walk "$dir/$f" "dir"
+      fi
+          echo "building protobuf: $dir/$f"
+    fi
+  done
 }
 
-if [ "$1" == "" ]; then
-	$1 = "./api"
-    echo "invalid api dir"
-else
-	walk "$1" "file"
-fi
+function main() {
+  local api_dir='./api'
+
+  if [ "$1" != "" ]; then
+    api_dir=$1
+  fi
+
+  walk "$api_dir" "file"
+}
+
+main "$@"

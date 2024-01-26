@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"time"
 )
 
 type pprofServer struct {
@@ -18,12 +19,13 @@ func (s *pprofServer) Run() error {
 }
 
 func (s *pprofServer) Close() error {
-	defer s.listener.Close()
-	return s.server.Shutdown(context.Background())
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	return s.server.Shutdown(ctx)
 }
 
 func newPprofServer() (*pprofServer, error) {
-	listener, err := net.Listen("tcp", "0.0.0.0:0")
+	listener, err := net.Listen("tcp", "127.0.0.1:")
 	if err != nil {
 		return nil, err
 	}
