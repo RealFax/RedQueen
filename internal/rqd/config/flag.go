@@ -127,12 +127,12 @@ func (v validatorStringValue[T]) String() string {
 
 func DecodeClusterBootstraps(s string) ([]ClusterBootstrap, error) {
 	if s == "" {
-		return []ClusterBootstrap{}, errors.New("invalid cluster bootstraps")
+		return nil, errors.New("invalid cluster bootstraps")
 	}
 
 	cs := strings.Split(s, ",")
 	if len(cs) == 0 {
-		return nil, errors.New("cluster not found")
+		return nil, errors.New("empty cluster bootstraps")
 	}
 
 	cbs := make([]ClusterBootstrap, len(cs))
@@ -187,3 +187,56 @@ func (v *clusterBootstrapsValue) Set(s string) error {
 }
 
 func (v *clusterBootstrapsValue) String() string { return EncodeClusterBootstraps(*v) }
+
+// -- map[string]string value --
+
+func decodeStringMap(s string) (map[string]string, error) {
+	if s == "" {
+		return nil, errors.New("invalid string map")
+	}
+	entries := strings.Split(s, ",")
+	if len(entries) == 0 {
+		return nil, errors.New("empty string map")
+	}
+	m := make(map[string]string)
+	for _, entry := range entries {
+		kv := strings.Split(entry, ":")
+		if len(kv) != 2 {
+			continue
+		}
+		m[kv[0]] = kv[1]
+	}
+	return m, nil
+}
+
+func encodeStringMap(m map[string]string) string {
+	if len(m) == 0 {
+		return ""
+	}
+	builder := strings.Builder{}
+	for k, v := range m {
+		builder.WriteString(k)
+		builder.WriteRune(':')
+		builder.WriteString(v)
+		builder.WriteRune(',')
+	}
+	return builder.String()[:builder.Len()-1]
+}
+
+type stringMapValue map[string]string
+
+func (v *stringMapValue) Set(s string) error {
+	entries, err := decodeStringMap(s)
+	if err != nil {
+		return err
+	}
+	*v = entries
+	return nil
+}
+
+func (v *stringMapValue) String() string { return encodeStringMap(*v) }
+
+func newStringMap(val string, p *map[string]string) *stringMapValue {
+	*p, _ = decodeStringMap(val)
+	return (*stringMapValue)(p)
+}

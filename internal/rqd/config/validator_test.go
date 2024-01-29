@@ -1,9 +1,8 @@
 package config_test
 
 import (
+	"github.com/RealFax/RedQueen/internal/rqd/config"
 	"testing"
-
-	"github.com/RealFax/RedQueen/config"
 )
 
 func unexpected(t *testing.T, validator config.Validator) {
@@ -33,17 +32,6 @@ func TestEnumNutsRWMode_Valid(t *testing.T) {
 	}
 
 	expected(t, config.EnumNutsRWMode("rwmode"))
-}
-
-func TestEnumLogLogger_Valid(t *testing.T) {
-	for _, val := range []config.EnumLogLogger{
-		config.LogLoggerZap,
-		config.LogLoggerInternal,
-	} {
-		unexpected(t, val)
-	}
-
-	expected(t, config.EnumLogLogger("none"))
 }
 
 func TestFilePath_Valid(t *testing.T) {

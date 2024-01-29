@@ -197,7 +197,7 @@ func (s *DB) Swap(namespace string) (store.Actions, error) {
 	if err != nil {
 		return nil, err
 	}
-	return n, n.SetWithTTL(KeyInitBucket, nil, 1)
+	return n, n.SetWithTTL(KeyInitBucket, nil, 4)
 }
 
 func (s *DB) Close() error {

@@ -3,8 +3,14 @@ id = "node-1"
 data-dir = "/tmp/red_queen"
 listen-peer-addr = "127.0.0.1:5290"
 listen-client-addr = "127.0.0.1:5230"
+listen-http-addr = "127.0.0.1:5231"
 max-snapshots = 5
 requests-merged = false
+
+    [node.tls]
+    auto = true
+    cert-file = ""
+    key-file = ""
 
 [store]
 # backend options
@@ -19,28 +25,21 @@ backend = "nuts"
 [cluster]
     [[cluster.bootstrap]]
     name = "node-1"
-    peer-addr = "127.0.0.1:2539"
+    peer-addr = "127.0.0.1:5290"
 
-    [[cluster.bootstrap]]
-    name = "node-3"
-    peer-addr = "127.0.0.1:3539"
-
-    [[cluster.bootstrap]]
-    name = "node-1"
-    peer-addr = "127.0.0.1:4539"
-
-token = "red-queen-cluster"
-
-[log]
-# logger options
-# zap, internal
-logger = ""
-debug = false
+#    [[cluster.bootstrap]]
+#    name = "node-3"
+#    peer-addr = "127.0.0.1:4290"
+#
+#    [[cluster.bootstrap]]
+#    name = "node-1"
+#    peer-addr = "127.0.0.1:3290"
 
 [misc]
 pprof = false
 # metrics = "basic"
 # metrics-addr = "localhost:8090"
 
-[auth]
-token = "RED_QUEEN_AUTH_TOKEN"
+[basic-auth]
+root = "toor"
+admin = "123456"

@@ -1,6 +1,6 @@
 package version
 
-import "fmt"
+import "strings"
 
 const (
 	Major = "0"
@@ -13,8 +13,23 @@ var (
 	BuildVersion string
 )
 
-var v = fmt.Sprintf("v%s.%s.%s, build version: %s, time: %s", Major, Minor, Patch, BuildVersion, BuildTime)
+var str string
+
+func init() {
+	b := strings.Builder{}
+	b.WriteString("v" + Major + "." + Minor + "." + Patch)
+
+	if BuildVersion != "" {
+		b.WriteString(", build version: " + BuildVersion)
+	}
+
+	if BuildTime != "" {
+		b.WriteString(", time: " + BuildTime)
+	}
+
+	str = b.String()
+}
 
 func String() string {
-	return v
+	return str
 }

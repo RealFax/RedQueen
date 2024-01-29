@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"io"
-	"time"
 )
 
 type Value struct {
@@ -11,14 +10,6 @@ type Value struct {
 	TTL       uint32
 	Key       []byte
 	Data      []byte
-}
-
-func (v *Value) GetTimestampAsTime() time.Time {
-	return time.Unix(int64(v.Timestamp), 0)
-}
-
-func (v *Value) GetTTLAsDuration() time.Duration {
-	return time.Second * time.Duration(v.TTL)
 }
 
 type WatchValue struct {

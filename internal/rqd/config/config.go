@@ -30,13 +30,21 @@ func (r *env) ConfigFile() string {
 	return r.configFile
 }
 
+type NodeTLS struct {
+	Auto     bool   `toml:"auto"`
+	CertFile string `toml:"cert-file"`
+	KeyFile  string `toml:"key-file"`
+}
+
 type Node struct {
-	ID               string `toml:"id"`
-	DataDir          string `toml:"data-dir"`
-	ListenPeerAddr   string `toml:"listen-peer-addr"`
-	ListenClientAddr string `toml:"listen-client-addr"`
-	MaxSnapshots     uint32 `toml:"max-snapshots"`
-	RequestsMerged   bool   `toml:"requests-merged"`
+	ID               string  `toml:"id"`
+	DataDir          string  `toml:"data-dir"`
+	ListenPeerAddr   string  `toml:"listen-peer-addr"`
+	ListenClientAddr string  `toml:"listen-client-addr"`
+	ListenHttpAddr   string  `toml:"listen-http-addr"`
+	MaxSnapshots     uint32  `toml:"max-snapshots"`
+	RequestsMerged   bool    `toml:"requests-merged"`
+	TLS              NodeTLS `toml:"tls"`
 }
 
 type StoreNuts struct {
@@ -61,28 +69,19 @@ type Cluster struct {
 	Bootstrap []ClusterBootstrap `toml:"bootstrap"`
 }
 
-type Log struct {
-	Debug bool `toml:"debug"`
-	// Logger enum: zap, internal
-	Logger EnumLogLogger `toml:"logger"`
-}
-
 type Misc struct {
 	PPROF bool `toml:"pprof"`
 }
 
-type Auth struct {
-	Token string `toml:"token"`
-}
+type BasicAuth map[string]string
 
 type Config struct {
 	*env
-	Node    `toml:"node"`
-	Store   `toml:"store"`
-	Cluster `toml:"cluster"`
-	Log     `toml:"log"`
-	Misc    `toml:"misc"`
-	Auth    `toml:"auth"`
+	Node      `toml:"node"`
+	Store     `toml:"store"`
+	Cluster   `toml:"cluster"`
+	Misc      `toml:"misc"`
+	BasicAuth `toml:"basic-auth"`
 }
 
 func (c *Config) setupEnv() {
@@ -130,8 +129,15 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	f.StringVar(&cfg.Node.DataDir, "data-dir", DefaultNodeDataDir, "path to the data dir")
 	f.StringVar(&cfg.Node.ListenPeerAddr, "listen-peer-addr", DefaultNodeListenPeerAddr, "address to raft listen")
 	f.StringVar(&cfg.Node.ListenClientAddr, "listen-client-addr", DefaultNodeListenClientAddr, "address to grpc listen")
+	f.StringVar(&cfg.Node.ListenHttpAddr, "listen-http-addr", "", "address to http listen, if it is empty, it means that http server is not used.")
 	f.Var(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "max-snapshots", "max number to snapshots(raft)")
 	f.BoolVar(&cfg.Node.RequestsMerged, "requests-merged", DefaultNodeRequestsMerged, "enable raft apply log requests merged")
+
+	// main config::node::tls
+	f.BoolVar(&cfg.Node.TLS.Auto, "auto-tls", false, "auto generator tls")
+	f.StringVar(&cfg.Node.TLS.CertFile, "tls-cert-file", "", "tls certificate file")
+	f.StringVar(&cfg.Node.TLS.KeyFile, "tls-key-file", "", "tls key file")
+
 	// main config::store
 	f.Var(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "store-backend", "")
 
@@ -148,15 +154,11 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	// in cli: node-1@peer_addr,node-2@peer_addr
 	f.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
 
-	// main config::log
-	f.Var(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "logger", "")
-	f.BoolVar(&cfg.Log.Debug, "log-debug", false, "")
-
 	// main config::misc
 	f.BoolVar(&cfg.Misc.PPROF, "d-pprof", false, "")
 
-	// main config::auth
-	f.StringVar(&cfg.Auth.Token, "auth-token", "", "")
+	// main config::basic-auth
+	f.Var(newStringMap("", (*map[string]string)(&cfg.BasicAuth)), "basic-auth", "grpc, http api endpoint basic auth map, e.g. : root:toor,admin:123456")
 
 	return f.Parse(args)
 }
@@ -169,8 +171,14 @@ func bindServerFromEnv(cfg *Config) {
 	EnvStringVar(&cfg.Node.DataDir, "RQ_DATA_DIR", DefaultNodeDataDir)
 	EnvStringVar(&cfg.Node.ListenPeerAddr, "RQ_LISTEN_PEER_ADDR", DefaultNodeListenPeerAddr)
 	EnvStringVar(&cfg.Node.ListenClientAddr, "RQ_LISTEN_CLIENT_ADDR", DefaultNodeListenClientAddr)
+	EnvStringVar(&cfg.Node.ListenHttpAddr, "RQ_LISTEN_HTTP_ADDR", "")
 	BindEnvVar(newUInt32Value(DefaultNodeMaxSnapshots, &cfg.Node.MaxSnapshots), "RQ_MAX_SNAPSHOTS")
 	EnvBoolVar(&cfg.Node.RequestsMerged, "RQ_REQUESTS_MERGED", DefaultNodeRequestsMerged)
+
+	// main config::node::tls
+	EnvBoolVar(&cfg.Node.TLS.Auto, "RQ_AUTO_TLS", false)
+	EnvStringVar(&cfg.Node.TLS.CertFile, "RQ_TLS_CERT_FILE", "")
+	EnvStringVar(&cfg.Node.TLS.KeyFile, "RQ_TLS_KEY_FILE", "")
 
 	// main config::store
 	BindEnvVar(newValidatorStringValue[EnumStoreBackend](DefaultStoreBackend, &cfg.Store.Backend), "RQ_STORE_BACKEND")
@@ -187,14 +195,11 @@ func bindServerFromEnv(cfg *Config) {
 	// main config::cluster::bootstrap(s)
 	BindEnvVar(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "RQ_CLUSTER_BOOTSTRAP")
 
-	// main config::log
-	BindEnvVar(newValidatorStringValue[EnumLogLogger](DefaultLogLogger, &cfg.Log.Logger), "RQ_LOGGER")
-
 	// main config::misc
 	EnvBoolVar(&cfg.Misc.PPROF, "RQ_DEBUG_PPROF", false)
 
-	// main config::auth
-	EnvStringVar(&cfg.Auth.Token, "RQ_AUTH_TOKEN", "")
+	// main config::basic-auth
+	BindEnvVar(newStringMap("", (*map[string]string)(&cfg.BasicAuth)), "RQ_BASIC_AUTH")
 }
 
 func bindFromConfigFile(cfg *Config, path string) error {

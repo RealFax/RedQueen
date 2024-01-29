@@ -1,11 +1,13 @@
 package rqd
 
 import (
+	"context"
 	"github.com/RealFax/RedQueen/internal/rqd/store"
 	"io"
 	"net"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
@@ -23,20 +25,29 @@ type Raft struct {
 	stableStore   raft.StableStore
 	snapshotStore raft.SnapshotStore
 	transport     raft.Transport
+	ctx           context.Context
+
 	*raft.Raft
 }
 
 func (r *Raft) AddCluster(id raft.ServerID, addr raft.ServerAddress) error {
-	return r.AddVoter(id, addr, 0, time.Second*30).Error()
+	return r.AddVoter(id, addr, 0, 30*time.Second).Error()
 }
 
 func (r *Raft) Term() uint64 {
-	return atomic.LoadUint64(&r.term)
+	return atomic.LoadUint64((*uint64)(unsafe.Pointer(r.Raft)))
 }
 
 type RaftServerOption func(*Raft) error
 
 func RaftWithEmpty() RaftServerOption { return func(r *Raft) error { return nil } }
+
+func RaftWithContext(ctx context.Context) RaftServerOption {
+	return func(r *Raft) error {
+		r.ctx = ctx
+		return nil
+	}
+}
 
 func RaftWithBootstrap() RaftServerOption {
 	return func(r *Raft) error {

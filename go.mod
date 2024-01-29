@@ -7,9 +7,11 @@ require (
 	github.com/RealFax/order-map v1.0.0
 	github.com/cespare/xxhash v1.1.0
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/raft v1.6.0
 	github.com/hashicorp/raft-boltdb/v2 v2.3.0
 	github.com/json-iterator/go v1.1.12
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nutsdb/nutsdb v0.14.3
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.25.7
@@ -27,7 +29,6 @@ require (
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
 	github.com/hashicorp/go-msgpack/v2 v2.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
@@ -44,6 +45,5 @@ require (
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
 )

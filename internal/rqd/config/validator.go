@@ -41,22 +41,6 @@ func (m EnumNutsRWMode) Valid() error {
 	}
 }
 
-type EnumLogLogger string
-
-const (
-	LogLoggerZap      EnumLogLogger = "zap"
-	LogLoggerInternal EnumLogLogger = "internal"
-)
-
-func (l EnumLogLogger) Valid() error {
-	switch l {
-	case LogLoggerZap, LogLoggerInternal:
-		return nil
-	default:
-		return errors.New("unknown log logger type")
-	}
-}
-
 type FilePath string
 
 func (p FilePath) Valid() error {
@@ -68,5 +52,5 @@ func (p FilePath) Valid() error {
 }
 
 type stringValidator interface {
-	EnumStoreBackend | EnumNutsRWMode | EnumLogLogger | FilePath
+	EnumStoreBackend | EnumNutsRWMode | FilePath
 }

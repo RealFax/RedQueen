@@ -22,9 +22,3 @@ const (
 	DefaultStoreNutsStrictMode bool   = false
 	DefaultStoreNutsRWMode     string = "fileio"
 )
-
-// -- log default value
-
-const (
-	DefaultLogLogger = string(LogLoggerZap)
-)

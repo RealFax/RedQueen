@@ -121,5 +121,8 @@ func BackupReader(dst string, src io.Reader) error {
 }
 
 func ReadTTL(md *nutsdb.MetaData) uint32 {
+	if md.TTL == 1 {
+		return 0
+	}
 	return uint32((md.Timestamp / 1000) + uint64(md.TTL) - uint64(time.Now().Unix()))
 }

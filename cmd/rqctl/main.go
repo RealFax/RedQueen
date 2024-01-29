@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/RealFax/RedQueen/internal/version"
-	client2 "github.com/RealFax/RedQueen/pkg/client"
+	"github.com/RealFax/RedQueen/pkg/client"
 	"net/netip"
 	"os"
 	"strings"
@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	invoker *client2.Client
+	invoker *client.Client
 )
 
 func dialRQ() error {
@@ -47,8 +47,8 @@ func dialRQ() error {
 		endpoints[i] = addr
 	}
 
-	client2.SetMaxOpenConn(1)
-	if invoker, err = client2.New(
+	client.SetMaxOpenConn(1)
+	if invoker, err = client.New(
 		context.Background(),
 		endpoints,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

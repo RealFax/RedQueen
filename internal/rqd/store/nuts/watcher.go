@@ -98,10 +98,7 @@ func (c *WatcherChild) Watch(key []byte) *WatcherNotifier {
 	channel, ok := c.Channels.Load(watchKey)
 	if !ok {
 		// init watcher channel
-		_channel := &WatcherChannel{}
-		if c.Channels.CompareAndSwap(watchKey, nil, _channel) {
-			channel = _channel
-		}
+		channel, _ = c.Channels.LoadOrStore(watchKey, &WatcherChannel{})
 	}
 
 	// create watcher notify
@@ -122,10 +119,7 @@ func (c *WatcherChild) WatchPrefix(prefix []byte) *WatcherNotifier {
 	channel, ok := c.PrefixChannels.Load(prefixKey)
 	if !ok {
 		// init prefix watcher channel
-		_channel := &WatcherChannel{PrefixWatch: true, Prefix: prefix}
-		if c.PrefixChannels.CompareAndSwap(prefixKey, nil, _channel) {
-			channel = _channel
-		}
+		channel, _ = c.PrefixChannels.LoadOrStore(prefixKey, &WatcherChannel{PrefixWatch: true, Prefix: prefix})
 	}
 
 	// create prefix watcher notify
@@ -168,10 +162,7 @@ type Watcher struct {
 func (w *Watcher) UseTarget(namespace string) *WatcherChild {
 	child, ok := w.Namespaces.Load(namespace)
 	if !ok {
-		_child := &WatcherChild{Namespace: namespace}
-		if w.Namespaces.CompareAndSwap(namespace, nil, child) {
-			child = _child
-		}
+		child, _ = w.Namespaces.LoadOrStore(namespace, &WatcherChild{Namespace: namespace})
 	}
 	return child.(*WatcherChild)
 }
