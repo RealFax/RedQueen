@@ -2,30 +2,32 @@ package main
 
 import (
 	"fmt"
+	"github.com/RealFax/RedQueen/internal/rqd"
+	"github.com/RealFax/RedQueen/internal/rqd/config"
+	"github.com/RealFax/RedQueen/internal/version"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/RealFax/RedQueen"
-	"github.com/RealFax/RedQueen/config"
 )
 
 func main() {
+	fmt.Println("Version:", version.String())
+
 	cfg, err := config.New(os.Args...)
 	if err != nil {
-		fmt.Println("[-] parse config failed, ", err)
+		fmt.Println("[-] Failed parse config, : ", err)
 		return
 	}
 
-	server, err := red.NewServer(cfg)
+	server, err := rqd.NewServer(cfg)
 	if err != nil {
-		fmt.Println("[-] init server failed, ", err)
+		fmt.Println("[-] Failed to initialize server, ", err)
 		return
 	}
-	defer server.Close()
+	defer server.Shutdown() //
 
 	if err = server.ListenAndServe(); err != nil {
-		fmt.Println("[-] listen client failed, ", err)
+		fmt.Println("[-] Failed run server, ", err)
 		return
 	}
 
@@ -33,9 +35,7 @@ func main() {
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 	select {
 	case <-c:
-		if err = server.Close(); err != nil {
-			fmt.Println("[-] server close failed, ", err)
-		}
+		server.Shutdown()
 		return
 	}
 }

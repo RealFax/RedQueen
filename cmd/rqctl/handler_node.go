@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/RealFax/RedQueen/client"
+	"github.com/RealFax/RedQueen/pkg/client"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

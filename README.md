@@ -16,7 +16,9 @@ _Inspired by the supercomputer (Red Queen) in "Resident Evil", the distributed k
 This is a reliable distributed key-value store based on the raft algorithm, and internal provides advanced functions such as distributed-lock...
 
 ## Client call
-`# go get github.com/RealFax/RedQueen@latest`
+```
+go get github.com/RealFax/RedQueen@latest
+```
 
 [Code example](https://github.com/RealFax/RedQueen/tree/master/client/example)
 

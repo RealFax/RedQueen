@@ -16,7 +16,9 @@ _灵感来源于《生化危机》中的超级计算机(Red Queen), 分布式key
 这是一个基于raft算法实现的可靠分布式key-value存储, 并在内部提供了诸如 分布式锁...之类的高级功能
 
 ## 客户端调用
-`# go get github.com/RealFax/RedQueen@latest`
+```
+go get github.com/RealFax/RedQueen@latest
+```
 
 [代码示例](https://github.com/RealFax/RedQueen/tree/master/client/example)
 

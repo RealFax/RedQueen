@@ -6,7 +6,27 @@ on:
       - created
 
 jobs:
-  build:
+  init-env:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@master
+
+      - name: Declare some variables
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> "$GITHUB_ENV"
+          echo "build_ts=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: "build env double check"
+        run: |
+          echo "Branch: ${{ env.branch }}"
+          echo "Short hash: ${{ env.sha_short }}"
+          echo "Build timestamp: ${{ env.build_ts }}"
+
+  build-rqd:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -44,7 +64,7 @@ jobs:
           go-version: '1.21'
 
       - name: Making RedQueen ${{ matrix.goos }}/${{ matrix.goarch }}
-        run: go build -o rqd.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqd/main.go
+        run: go build --tags=safety_map -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o rqd.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqd/main.go
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -98,8 +118,8 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Making RedQueen ${{ matrix.goos }}/${{ matrix.goarch }}
-        run: go build -o rqctl.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqctl
+      - name: Making rqctl ${{ matrix.goos }}/${{ matrix.goarch }}
+        run: go build -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o rqctl.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqctl
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}

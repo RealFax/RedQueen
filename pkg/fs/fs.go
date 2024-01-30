@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"io"
 	"os"
 	"strings"
 )
@@ -25,33 +24,4 @@ func MustOpenWithFlag(path string, flag int) (*os.File, error) {
 // MustOpen if the file does not exist, create a file and open it in overwrite mode
 func MustOpen(path string) (*os.File, error) {
 	return MustOpenWithFlag(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE)
-}
-
-func MustOpenWithAppend(path string) (*os.File, error) {
-	return MustOpenWithFlag(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE)
-}
-
-func GetFilePerm(path string) (string, error) {
-	f, err := os.Stat(path)
-	if err != nil {
-		return "", err
-	}
-	return f.Mode().Perm().String(), nil
-}
-
-// WriteAsBytes will overwrite the target file
-func WriteAsBytes(path string, b []byte) error {
-	f, err := MustOpen(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	n, _ := f.Seek(io.SeekStart, io.SeekEnd)
-	_, err = f.WriteAt(b, n)
-	return err
-}
-
-func ReadAsBytes(path string) ([]byte, error) {
-	return os.ReadFile(path)
 }

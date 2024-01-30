@@ -10,6 +10,26 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  init-env:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@master
+
+      - name: Declare some variables
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> "$GITHUB_ENV"
+          echo "build_ts=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: "build env double check"
+        run: |
+          echo "Branch: ${{ env.branch }}"
+          echo "Short hash: ${{ env.sha_short }}"
+          echo "Build timestamp: ${{ env.build_ts }}"
+
   build-oci-image:
     runs-on: ubuntu-latest
 
@@ -50,8 +70,8 @@ jobs:
 
       - name: Making RedQueen docker image
         run: |
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqd ./cmd/rqd
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./release/rqctl ./cmd/rqctl
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build --tags=safety_map -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o ./release/rqd ./cmd/rqd
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o ./release/rqctl ./cmd/rqctl
           cp ./Dockerfile ./release/Dockerfile
 
       # docker hub credentials
