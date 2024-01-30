@@ -186,7 +186,7 @@ func TestStoreAPI_Snapshot(t *testing.T) {
 
 func TestStoreAPI_Break(t *testing.T) {
 	time.Sleep(time.Millisecond * 50) // waiting quit break state
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	if err := db.Break(ctx); err != nil {
 		cancel()
 		t.Fatal(err)

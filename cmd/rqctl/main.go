@@ -29,7 +29,7 @@ var (
 func dialRQ() error {
 	endpointString, ok := syscall.Getenv("RQ_ENDPOINTS")
 	if !ok {
-		fmt.Println(helpText)
+		fmt.Print(helpText)
 		return errors.New("can not read endpoints from environment variable RQ_ENDPOINTS")
 	}
 
