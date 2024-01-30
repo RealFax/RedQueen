@@ -21,7 +21,10 @@ func (a *writer) onFullTrigger() {
 	if atomic.LoadUint32(&a.state) == 0 || atomic.LoadInt32(&a.max) != atomic.LoadInt32(&a.size) {
 		return
 	}
-	_ = a.Close()
+
+	a.mu.Lock()
+	close(a.onFull)
+	a.mu.Unlock()
 }
 
 func (a *writer) Encode(w io.Writer) error {
