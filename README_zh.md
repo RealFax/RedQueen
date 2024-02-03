@@ -20,7 +20,7 @@ _灵感来源于《生化危机》中的超级计算机(Red Queen), 分布式key
 go get github.com/RealFax/RedQueen@latest
 ```
 
-[代码示例](https://github.com/RealFax/RedQueen/tree/master/client/example)
+[代码示例](https://github.com/RealFax/RedQueen/tree/master/pkg/client/example)
 
 ## 写入 & 读取
 _基于raft算法实现的RedQueen具备单节点写入(Leader node)多节点读取(Follower node)的特性_
@@ -53,8 +53,12 @@ RedQueen在内部实现了一个互斥锁, 并提供grpc接口调用
 - `RQ_DATA_DIR <string>` 节点数据存储目录
 - `RQ_LISTEN_PEER_ADDR <string>` 节点间通信监听(raft rpc)地址, 不可为 `0.0.0.0`
 - `RQ_LISTEN_CLIENT_ADDR <string>` 节点服务监听(grpc api)地址
+- `RQ_LISTEN_HTTP_ADDR <string>` 节点服务监听(http api)地址
 - `RQ_MAX_SNAPSHOTS <uint32>` 最大快照数量
 - `RQ_REQUESTS_MERGED <bool>` 是否开启合并请求
+- `RQ_AUTO_TLS <bool>` 是否启用auto tls
+- `RQ_TLS_CERT_FILE <string>` tls certificate文件路径
+- `RQ_TLS_KEY_FILE <string>` tls key文件路径
 - `RQ_STORE_BACKEND <string [nuts]>` 存储后端(默认nuts)
 - `RQ_NUTS_NODE_NUM <int64>`
 - `RQ_NUTS_SYNC <bool>` 是否启用同步写入磁盘
@@ -62,6 +66,7 @@ RedQueen在内部实现了一个互斥锁, 并提供grpc接口调用
 - `RQ_NUTS_RW_MODE <string [fileio, mmap]>` 写入模式
 - `RQ_CLUSTER_BOOTSTRAP <string>` 集群信息 (例如 node-1@127.0.0.1:5290, node-2@127.0.0.1:4290)
 - `RQ_DEBUG_PPROF <bool>` 启用pprof调试
+- `RQ_BASIC_AUTH <string>` basic auth的信息 (例如 admin:123456,root:toor)
 
 ### 程序参数
 - `-config-file <string>` 配置文件路径. note: 设置该参数后, 将会忽略以下参数, 使用配置文件
@@ -69,8 +74,12 @@ RedQueen在内部实现了一个互斥锁, 并提供grpc接口调用
 - `-data-dir <string>` 节点数据存储目录
 - `-listen-peer-addr <string>` 节点间通信监听(raft rpc)地址, 不可为 `0.0.0.0`
 - `-listen-client-addr <string>` 节点服务监听(grpc api)地址
+- `-listen-http-addr <string>` 节点服务监听(http api)地址
 - `-max-snapshots <uint32>` 最大快照数量
 - `-requests-merged <bool>` 是否开启合并请求
+- `-auto-tls <bool>` 是否启用auto tls
+- `-tls-cert-file <string>` tls certificate文件路径
+- `-tls-key-file <string>` tls key文件路径
 - `-store-backend <string [nuts]>` 存储后端(默认nuts)
 - `-nuts-node-num <int64>`
 - `-nuts-sync <bool>` 是否启用同步写入磁盘
@@ -78,6 +87,7 @@ RedQueen在内部实现了一个互斥锁, 并提供grpc接口调用
 - `-nuts-rw-mode <string [fileio, mmap]>` 写入模式
 - `-cluster-bootstrap <string>` 集群信息 (例如 node-1@127.0.0.1:5290, node-2@127.0.0.1:4290)
 - `-d-pprof <bool>` 启用pprof调试
+- `-basic-auth <string>` basic auth信息 (例如 admin:123456,root:toor)
 
 ### 配置文件
 ```toml
@@ -86,8 +96,14 @@ id = "node-1"
 data-dir = "/tmp/red_queen"
 listen-peer-addr = "127.0.0.1:5290"
 listen-client-addr = "127.0.0.1:5230"
+listen-http-addr = "127.0.0.1:5231"
 max-snapshots = 5
 requests-merged = false
+
+    [node.tls]
+    auto = true
+    cert-file = ""
+    key-file = ""
 
 [store]
 # backend options
@@ -110,6 +126,10 @@ backend = "nuts"
 
 [misc]
     pprof = false
+
+[basic-auth]
+root = "toor"
+admin = "123456"
 ```
 
 ### _关于更多用法(例如docker单/多节点部署), 请参考 [**Wiki**](https://github.com/RealFax/RedQueen/wiki)_ 🤩

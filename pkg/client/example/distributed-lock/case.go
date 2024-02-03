@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	client2 "github.com/RealFax/RedQueen/pkg/client"
+	"github.com/RealFax/RedQueen/pkg/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -13,7 +13,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := client2.New(ctx, []string{
+	c, err := client.New(ctx, []string{
 		"127.0.0.1:3230",
 		"127.0.0.1:4230",
 		"127.0.0.1:5230",
@@ -23,7 +23,7 @@ func main() {
 	}
 	defer c.Close()
 
-	mu := client2.NewMutexLock(ctx, c, 120, "lock_object")
+	mu := client.NewMutexLock(ctx, c, 120, "lock_object")
 
 	if err = mu.Lock(); err != nil {
 		log.Fatal("client lock error:", err)

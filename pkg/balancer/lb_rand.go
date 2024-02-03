@@ -2,6 +2,7 @@ package balancer
 
 import (
 	"crypto/rand"
+	"github.com/RealFax/RedQueen/pkg/expr"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -13,8 +14,7 @@ type randomBalance[K comparable, V any] struct {
 func (b *randomBalance[K, V]) Next() (V, error) {
 	size := b.Size()
 	if size == 0 {
-		var empty V
-		return empty, errors.New("empty load balance list")
+		return expr.Zero[V](), errors.New("empty load balance list")
 	}
 	idx, _ := rand.Int(rand.Reader, big.NewInt(int64(size)))
 

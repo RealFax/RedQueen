@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	client2 "github.com/RealFax/RedQueen/pkg/client"
+	"github.com/RealFax/RedQueen/pkg/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -12,9 +12,9 @@ import (
 )
 
 func main() {
-	c, err := client2.New(context.Background(), []string{
-		//"127.0.0.1:3230",
-		//"127.0.0.1:4230",
+	c, err := client.New(context.Background(), []string{
+		"127.0.0.1:3230",
+		"127.0.0.1:4230",
 		"127.0.0.1:5230",
 	}, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -23,7 +23,7 @@ func main() {
 	defer c.Close()
 
 	// watch case
-	watcher := client2.NewWatcher([]byte("Key1"))
+	watcher := client.NewWatcher([]byte("Key1"))
 	go func() {
 		if wErr := c.Watch(context.Background(), watcher); err != nil {
 			log.Fatal("client watch error:", wErr)

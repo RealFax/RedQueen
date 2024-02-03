@@ -65,7 +65,6 @@ type ClusterBootstrap struct {
 }
 
 type Cluster struct {
-	Token     string             `toml:"token"`
 	Bootstrap []ClusterBootstrap `toml:"bootstrap"`
 }
 
@@ -147,9 +146,6 @@ func bindServerFromArgs(cfg *Config, args ...string) error {
 	f.BoolVar(&cfg.Store.Nuts.StrictMode, "nuts-strict-mode", DefaultStoreNutsStrictMode, "enable strict mode")
 	f.Var(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "nuts-rw-mode", "select read & write mode, options: fileio, mmap")
 
-	// main config::cluster
-	f.StringVar(&cfg.Cluster.Token, "cluster-token", "", "")
-
 	// main config::cluster::bootstrap(s)
 	// in cli: node-1@peer_addr,node-2@peer_addr
 	f.Var(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "cluster-bootstrap", "bootstrap at cluster startup, e.g. : node-1@peer_addr,node-2@peer_addr")
@@ -188,9 +184,6 @@ func bindServerFromEnv(cfg *Config) {
 	EnvBoolVar(&cfg.Store.Nuts.Sync, "RQ_NUTS_SYNC", DefaultStoreNutsSync)
 	EnvBoolVar(&cfg.Store.Nuts.StrictMode, "RQ_NUTS_STRICT_MODE", DefaultStoreNutsStrictMode)
 	BindEnvVar(newValidatorStringValue[EnumNutsRWMode](DefaultStoreNutsRWMode, &cfg.Store.Nuts.RWMode), "RQ_NUTS_RW_MODE")
-
-	// main config::cluster
-	EnvStringVar(&cfg.Cluster.Token, "RQ_CLUSTER_TOKEN", "")
 
 	// main config::cluster::bootstrap(s)
 	BindEnvVar(newClusterBootstrapsValue("", &cfg.Cluster.Bootstrap), "RQ_CLUSTER_BOOTSTRAP")

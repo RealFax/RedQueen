@@ -1,6 +1,7 @@
 package balancer
 
 import (
+	"github.com/RealFax/RedQueen/pkg/expr"
 	"github.com/pkg/errors"
 	"sync/atomic"
 )
@@ -13,8 +14,7 @@ type roundRobinBalance[K comparable, V any] struct {
 func (b *roundRobinBalance[K, V]) Next() (V, error) {
 	size := b.Size()
 	if size == 0 {
-		var empty V
-		return empty, errors.New("empty load balance list")
+		return expr.Zero[V](), errors.New("empty load balance list")
 	}
 	next := b.current.Add(1) % size
 	b.current.CompareAndSwap(b.current.Load(), next)

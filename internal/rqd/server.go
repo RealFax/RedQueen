@@ -9,6 +9,7 @@ import (
 	"github.com/RealFax/RedQueen/internal/rqd/store"
 	"github.com/RealFax/RedQueen/pkg/dlocker"
 	"github.com/RealFax/RedQueen/pkg/expr"
+	"github.com/RealFax/RedQueen/pkg/grpcutil"
 	"github.com/RealFax/RedQueen/pkg/httputil"
 	"github.com/RealFax/RedQueen/pkg/tlsutil"
 	"github.com/hashicorp/go-hclog"
@@ -141,8 +142,13 @@ func (s *Server) registerRPCServer() {
 	opts := make([]grpc.ServerOption, 0, 8)
 	if s.tlsConfig != nil {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(s.tlsConfig)))
-
 	}
+
+	if s.cfg.BasicAuth != nil && len(s.cfg.BasicAuth) != 0 {
+		auth := grpcutil.NewBasicAuth(grpcutil.NewMemoryBasicAuthFunc(s.cfg.BasicAuth))
+		opts = append(opts, grpc.UnaryInterceptor(auth.Unary), grpc.StreamInterceptor(auth.Stream))
+	}
+
 	if s.grpcServer == nil {
 		s.grpcServer = grpc.NewServer(opts...)
 	}
