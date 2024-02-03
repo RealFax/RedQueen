@@ -20,7 +20,7 @@ This is a reliable distributed key-value store based on the raft algorithm, and 
 go get github.com/RealFax/RedQueen@latest
 ```
 
-[Code example](https://github.com/RealFax/RedQueen/tree/master/client/example)
+[Code example](https://github.com/RealFax/RedQueen/tree/master/pkg/client/example)
 
 ## Write & Read
 _RedQueen based on raft algorithm has the characteristics of single node write (Leader node) and multiple node read (Follower node)._
@@ -53,8 +53,12 @@ Read order: `Environment Variables | Program Arguments -> Configuration File`
 - `RQ_DATA_DIR <string>` Node data storage directory
 - `RQ_LISTEN_PEER_ADDR <string>` Node-to-node communication (Raft RPC) listening address, cannot be `0.0.0.0`
 - `RQ_LISTEN_CLIENT_ADDR <string>` Node service listening (gRPC API) address
+- `RQ_LISTEN_HTTP_ADDR <string>` Node service listening (http API) address
 - `RQ_MAX_SNAPSHOTS <uint32>` Maximum number of snapshots
 - `RQ_REQUESTS_MERGED <bool>` Whether to enable request merging
+- `RQ_AUTO_TLS <bool>` Whether to enable auto tls
+- `RQ_TLS_CERT_FILE <string>` TLS certificate path
+- `RQ_TLS_KEY_FILE <string>` TLS key path
 - `RQ_STORE_BACKEND <string [nuts]>` Storage backend (default: nuts)
 - `RQ_NUTS_NODE_NUM <int64>`
 - `RQ_NUTS_SYNC <bool>` Whether to enable synchronous disk writes
@@ -62,6 +66,8 @@ Read order: `Environment Variables | Program Arguments -> Configuration File`
 - `RQ_NUTS_RW_MODE <string [fileio, mmap]>` Write mode
 - `RQ_CLUSTER_BOOTSTRAP <string>` Cluster information (e.g., node-1@127.0.0.1:5290, node-2@127.0.0.1:4290)
 - `RQ_DEBUG_PPROF <bool>` Enable pprof debugging
+- `RQ_BASIC_AUTH <string>` Basic auth list (e.g., admin:123456,root:toor)
+
 
 ### Program Arguments
 - `-config-file <string>` Configuration file path. Note: If this parameter is set, the following parameters will be ignored, and the configuration file will be used.
@@ -69,8 +75,12 @@ Read order: `Environment Variables | Program Arguments -> Configuration File`
 - `-data-dir <string>` Node data storage directory
 - `-listen-peer-addr <string>` Node-to-node communication (Raft RPC) listening address, cannot be `0.0.0.0`
 - `-listen-client-addr <string>` Node service listening (gRPC API) address
+- `-listen-http-addr <string>` Node service listening (http API) address
 - `-max-snapshots <uint32>` Maximum number of snapshots
 - `-requests-merged <bool>` Whether to enable request merging
+- `-auto-tls <bool>` Whether to enable auto tls
+- `-tls-cert-file <string>` TLS certificate path
+- `-tls-key-file <string>` TLS key path
 - `-store-backend <string [nuts]>` Storage backend (default: nuts)
 - `-nuts-node-num <int64>`
 - `-nuts-sync <bool>` Whether to enable synchronous disk writes
@@ -78,6 +88,7 @@ Read order: `Environment Variables | Program Arguments -> Configuration File`
 - `-nuts-rw-mode <string [fileio, mmap]>` Write mode
 - `-cluster-bootstrap <string>` Cluster information (e.g., node-1@127.0.0.1:5290, node-2@127.0.0.1:4290)
 - `-d-pprof <bool>` Enable pprof debugging
+- `-basic-auth <string>` Basic auth list (e.g., admin:123456,root:toor)
 
 ### Configuration File
 ```toml
@@ -88,6 +99,11 @@ listen-peer-addr = "127.0.0.1:5290"
 listen-client-addr = "127.0.0.1:5230"
 max-snapshots = 5
 requests-merged = false
+
+    [node.tls]
+    auto = true
+    cert-file = ""
+    key-file = ""
 
 [store]
 # backend options
@@ -110,6 +126,10 @@ backend = "nuts"
 
 [misc]
     pprof = false
+
+[basic-auth]
+root = "toor"
+admin = "123456"
 ```
 
 ### _About More Usage (e.g., Docker Single/Multi-node Deployment), Please Refer to [**Wiki**](https://github.com/RealFax/RedQueen/wiki)_ 🤩

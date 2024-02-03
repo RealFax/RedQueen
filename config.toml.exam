@@ -35,12 +35,6 @@ backend = "nuts"
     name = "node-1"
     peer-addr = "127.0.0.1:3290"
 
-[log]
-# logger options
-# zap, internal
-logger = ""
-debug = false
-
 [misc]
 pprof = false
 
