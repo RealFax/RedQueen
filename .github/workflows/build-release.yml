@@ -61,7 +61,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.22'
 
       - name: Making RedQueen ${{ matrix.goos }}/${{ matrix.goarch }}
         run: go build --tags=safety_map -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o rqd.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqd/main.go
@@ -116,7 +116,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.22'
 
       - name: Making rqctl ${{ matrix.goos }}/${{ matrix.goarch }}
         run: go build -ldflags "-s -w -X 'github.com/RealFax/RedQueen/internal/version.BuildTime=${{ env.build_ts }}' -X 'github.com/RealFax/RedQueen/internal/version.BuildVersion=${{ env.sha_short }}'" -o rqctl.${{ matrix.goos }}.${{ matrix.goarch }} ./cmd/rqctl

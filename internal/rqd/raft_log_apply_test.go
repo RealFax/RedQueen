@@ -3,21 +3,22 @@ package rqd_test
 import (
 	"github.com/RealFax/RedQueen/api/serverpb"
 	red "github.com/RealFax/RedQueen/internal/rqd"
+	"github.com/RealFax/RedQueen/pkg/expr"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var raftLogPayloadMessage = &serverpb.RaftLogPayload{
-	Command: serverpb.RaftLogCommand_TrySet,
-	Key:     []byte("test_key"),
-}
-
-func init() {
-	n := "test_namespace"
-	raftLogPayloadMessage.Namespace = &n
-}
+var (
+	raftLogPayloadMessage = &serverpb.RaftLogPayload{
+		Command:   serverpb.RaftLogCommand_TrySet,
+		Key:       []byte("test_key"),
+		Namespace: expr.Pointer("test_namespace"),
+	}
+	expectPayloadKey = uint64(4855146586712729396)
+)
 
 func TestRaftLogPayloadKey(t *testing.T) {
-	t.Logf("Payload key: %d", red.RaftLogPayloadKey(raftLogPayloadMessage))
+	assert.Equal(t, expectPayloadKey, red.RaftLogPayloadKey(raftLogPayloadMessage))
 }
 
 func BenchmarkRaftLogPayloadKey(b *testing.B) {

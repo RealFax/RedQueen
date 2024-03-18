@@ -86,18 +86,14 @@ func (s *v1RPCServer) PrefixScan(_ context.Context, req *serverpb.PrefixScanRequ
 	return &serverpb.PrefixScanResponse{
 		Header: s.responseHeader(),
 		Result: func() []*serverpb.PrefixScanResponse_PrefixScanResult {
-			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(scanResults))
-			for i, value := range scanResults {
-				// todo: this part code will be removed future golang version
-				// ---- start ----
-				value := value
-				// ---- end ----
-				results[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
+			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, 0, len(scanResults))
+			for _, value := range scanResults {
+				results = append(results, &serverpb.PrefixScanResponse_PrefixScanResult{
 					Key:       value.Key,
 					Value:     value.Data,
 					Timestamp: value.Timestamp,
 					Ttl:       value.TTL,
-				}
+				})
 			}
 			return results
 		}(),
@@ -398,18 +394,14 @@ func (s *v1HttpServer) PrefixScan(w http.ResponseWriter, r *http.Request) error 
 	defer s.responseHeader(w)
 	httputil.NewAck[[]*serverpb.PrefixScanResponse_PrefixScanResult](http.StatusOK, 1).
 		Data(func() []*serverpb.PrefixScanResponse_PrefixScanResult {
-			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, len(scanResults))
-			for i, value := range scanResults {
-				// todo: this part code will be removed future golang version
-				// ---- start ----
-				value := value
-				// ---- end ----
-				results[i] = &serverpb.PrefixScanResponse_PrefixScanResult{
+			results := make([]*serverpb.PrefixScanResponse_PrefixScanResult, 0, len(scanResults))
+			for _, value := range scanResults {
+				results = append(results, &serverpb.PrefixScanResponse_PrefixScanResult{
 					Key:       value.Key,
 					Value:     value.Data,
 					Timestamp: value.Timestamp,
 					Ttl:       value.TTL,
-				}
+				})
 			}
 			return results
 		}()).Ok(w)

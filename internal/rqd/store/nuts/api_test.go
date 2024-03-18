@@ -1,233 +1,319 @@
 package nuts_test
 
 import (
-	"bytes"
 	"context"
 	"github.com/RealFax/RedQueen/internal/rqd/store"
 	"github.com/RealFax/RedQueen/internal/rqd/store/nuts"
+	"github.com/stretchr/testify/assert"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 )
 
+type TestPair struct {
+	Key, Value []byte
+}
+
 var (
-	db         store.Store
-	key, value = []byte("Hello"), []byte("World")
+	dir   string
+	db    store.Store
+	pair1 = TestPair{
+		Key:   []byte("Key1"),
+		Value: []byte("Value1"),
+	}
+	pair2 = TestPair{
+		Key:   []byte("Key2"),
+		Value: []byte("Value2"),
+	}
+	pairMatrix = []TestPair{
+		{Key: []byte("K0"), Value: []byte("V0")},
+		{Key: []byte("K1"), Value: []byte("V1")},
+		{Key: []byte("K2"), Value: []byte("V2")},
+		{Key: []byte("K3"), Value: []byte("V3")},
+		{Key: []byte("K4"), Value: []byte("V4")},
+		{Key: []byte("K5"), Value: []byte("V5")},
+		{Key: []byte("K6"), Value: []byte("V6")},
+		{Key: []byte("K7"), Value: []byte("V7")},
+		{Key: []byte("K8"), Value: []byte("V8")},
+		{Key: []byte("K9"), Value: []byte("V9")},
+	}
 )
 
-func init() {
-	os.RemoveAll("/tmp/nuts-db")
+func reset() {
 	var err error
+	dir, err = os.MkdirTemp("", "nuts-db")
+	if err != nil {
+		panic("init testing error, cause:" + err.Error())
+	}
 	if db, err = nuts.New(nuts.Config{
 		NodeNum: 1,
 		Sync:    false,
-		DataDir: "/tmp/nuts-db",
+		DataDir: dir,
 		RWMode:  nuts.MMap,
 	}); err != nil {
 		panic(err)
 	}
 
-	db.Set(key, value)
+	db.Set(pair1.Key, pair1.Value)
 }
 
-func getWithPrint(t *testing.T, key []byte, passErr bool) {
-	val, err := db.Get(key)
-	if err != nil {
-		if !passErr {
-			t.Fatal(err)
-		}
-		t.Log("PassError:", err)
-		return
-	}
-	t.Logf("Value: %s, Timestamp: %d, TTL: %d", val.Data, val.Timestamp, val.TTL)
-}
-
-func TestStoreAPI_Get(t *testing.T) {
-	getWithPrint(t, key, false)
-}
-
-func TestStoreAPI_PrefixSearchScan(t *testing.T) {
-	for off := 0; off < 10; off++ {
-		db.Set([]byte("user_"+strconv.Itoa(off)+"_state"), []byte(strconv.Itoa(off)))
-	}
-
-	result, err := db.PrefixSearchScan([]byte("user_"), "[^0-9_]", 0, 10)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, v := range result {
-		t.Logf("Value: %s, Timestamp: %d, TTL: %d", v.Data, v.Timestamp, v.TTL)
-	}
-}
-
-func TestStoreAPI_PrefixScan(t *testing.T) {
-	for off := 0; off < 100; off++ {
-		db.Set([]byte("user_"+strconv.Itoa(off)+"_state"), []byte(strconv.Itoa(off)))
-	}
-
-	result, err := db.PrefixScan([]byte("user_"), 0, 50)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Result size: ", len(result))
-}
-
-func TestStoreAPI_SetWithTTL(t *testing.T) {
-	if err := db.SetWithTTL([]byte("SetWithTTLKey"), []byte("SetWithTTlValue"), 16); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("SetWithTTLKey"), false)
-}
-
-func TestStoreAPI_Set(t *testing.T) {
-	if err := db.Set([]byte("SetKey"), []byte("SetValue")); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("SetKey"), false)
-}
-
-func TestStoreAPI_TrySetWithTTL(t *testing.T) {
-	if err := db.TrySetWithTTL([]byte("TrySetWithTTLKey"), []byte("TrySetWithTTLValue"), 16); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("TrySetWithTTLKey"), false)
-
-	if err := db.TrySetWithTTL([]byte("TrySetWithTTLKey"), nil, 16); err != nil {
-		t.Log("expected error:", err)
-	}
-	getWithPrint(t, []byte("TrySetWithTTLKey"), false)
-}
-
-func TestStoreAPI_TrySet(t *testing.T) {
-	if err := db.TrySet([]byte("TrySetKey"), []byte("TrySetValue")); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("TrySetKey"), false)
-
-	if err := db.TrySet([]byte("TrySetKey"), nil); err != nil {
-		t.Log("expected error:", err)
-	}
-	getWithPrint(t, []byte("TrySetKey"), false)
-}
-
-func TestStoreAPI_Del(t *testing.T) {
-	if err := db.Set([]byte("DelKey"), []byte("DelValue")); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("DelKey"), false)
-
-	if err := db.Del([]byte("DelKey")); err != nil {
-		t.Fatal(err)
-	}
-	getWithPrint(t, []byte("DelKey"), true)
-}
-
-func TestStoreAPI_Watch(t *testing.T) {
-	// watch before set, strict mode must be disabled first
-	nuts.DisableStrictMode()
-
-	notify, err := db.Watch(keys[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
+func ShouldTimeout(t *testing.T, timeout time.Duration, fc func()) {
+	t.Helper()
+	fin := make(chan struct{})
 
 	go func() {
-		t.Log("[+] Started watch")
-		for {
-			select {
-			case val := <-notify.Notify():
-				t.Logf("sequence: %d, Timestamp: %d, Value: %s", val.Seq, val.Timestamp, *val.Value)
-			case <-ctx.Done():
-				t.Log("[+] End watch")
-				notify.Close()
-				return
-			}
-		}
+		defer close(fin)
+		fc()
 	}()
 
-	time.Sleep(time.Second * 1)
-
-	for i := 0; i < 10; i++ {
-		if err = db.Set(keys[0], []byte("Hello, Watcher")); err != nil {
-			t.Fatal("set failed:", err)
-		}
-		time.Sleep(time.Millisecond * 300)
+	select {
+	case <-fin:
+		t.Errorf("test case should timeout %s", timeout)
+	case <-time.After(timeout):
+		t.SkipNow()
+		os.Exit(1)
+		return
 	}
+}
 
-	t.Log("[+] waiting watcher...")
+func TestDB_Swap(t *testing.T) {
+	reset()
 
-	time.Sleep(time.Second * 1)
+	db1, err := db.Swap("bucket1")
+	assert.NoError(t, err)
+	assert.NotNil(t, db1)
+	assert.Equal(t, "bucket1", db1.Current())
+
+	db2, err := db.Swap("bucket2")
+	assert.NoError(t, err)
+	assert.NotNil(t, db2)
+	assert.Equal(t, "bucket2", db2.Current())
+
+	// test to repeatedly Swap the same namespace
+	db3, err := db.Swap("bucket1")
+	assert.NoError(t, err)
+	assert.Equal(t, db3, db1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = db.Break(ctx) // expect: not error
+	assert.NoError(t, err)
+
+	_, err = db.Swap("bucket0") // expect: return error
+	assert.Error(t, err)
+}
+
+func TestDB_Break(t *testing.T) {
+	reset()
+
+	value, err := db.Get(pair1.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, value.Data, pair1.Value)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	err = db.Break(ctx)
+	assert.NoError(t, err)
+
+	// expect: timeout...
+	ShouldTimeout(t, 1*time.Second, func() {
+		value, err = db.Get(pair1.Key)
+		assert.Error(t, err)
+		assert.NotNil(t, value)
+	})
+
+	err = db.Break(ctx) // expect: return error
+	assert.Error(t, err)
 
 	cancel()
 
-	time.Sleep(time.Second * 1)
+	value, err = db.Get(pair1.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, value.Data, pair1.Value)
 }
 
-func TestStoreAPI_Namespace(t *testing.T) {
-	t.Logf("current namespace: %s", db.Current())
-	namespace, err := db.Swap("NextNamespace")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("current namespace: %s", namespace.Current())
-}
+func TestDB_Watch(t *testing.T) {
+	reset()
 
-func TestStoreAPI_Snapshot(t *testing.T) {
-	snapshot, err := db.Snapshot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("snapshot size: %d", snapshot.(*bytes.Buffer).Len())
-}
+	watcher, err := db.Watch(pair1.Key)
+	assert.NoError(t, err)
 
-func TestStoreAPI_Break(t *testing.T) {
-	time.Sleep(time.Millisecond * 50) // waiting quit break state
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	if err := db.Break(ctx); err != nil {
-		cancel()
-		t.Fatal(err)
-	}
-	getWithPrint(t, key, true)
-	cancel()                          // cancel break state
-	time.Sleep(time.Millisecond * 50) // waiting quit break state
-	getWithPrint(t, key, false)
-}
+	defer watcher.Close()
+	for i := 0; i < 10; i++ {
+		assert.NoError(t, db.Set(pair1.Key, pair1.Value))
 
-func TestStoreAPI_Restore(t *testing.T) {
-	snapshot, err := db.Snapshot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("snapshot size: %d", snapshot.(*bytes.Buffer).Len())
-	time.Sleep(time.Millisecond * 50) // waiting quit break state
-	if err = db.Restore(snapshot); err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(time.Millisecond * 50) // waiting quit break state
-	getWithPrint(t, key, false)
-}
-
-func BenchmarkStoreAPI_Get(b *testing.B) {
-	k := []byte("Hello")
-	for i := 0; i < b.N; i++ {
-		db.Get(k)
+		value := <-watcher.Notify()
+		assert.NotNil(t, value)
+		assert.Equal(t, pair1.Value, *value.Value)
 	}
 }
 
-func BenchmarkStoreAPI_Set(b *testing.B) {
-	k, v := []byte("Hello"), []byte("World")
-	for i := 0; i < b.N; i++ {
-		db.Set(k, v)
+func TestDB_WatchStrictMode(t *testing.T) {
+	reset()
+
+	nuts.EnableStrictMode()
+	defer nuts.DisableStrictMode()
+
+	watcher, err := db.Watch(pair1.Key)
+	assert.NoError(t, err)
+	defer watcher.Close()
+
+	_, err = db.Watch(pair2.Key)
+	// in strict mode, it will check whether the target Key exists.
+	assert.Error(t, err)
+}
+
+func TestDB_WatchPrefix(t *testing.T) {
+	reset()
+
+	watcher := db.WatchPrefix([]byte("K"))
+	defer func() {
+		assert.NoError(t, watcher.Close())
+	}()
+
+	for _, node := range pairMatrix {
+		assert.NoError(t, db.Set(node.Key, node.Value))
+
+		value := <-watcher.Notify()
+		assert.NotNil(t, value)
+		assert.Equal(t, node.Value, *value.Value)
 	}
 }
 
-func BenchmarkStoreAPI_SetWithTTL(b *testing.B) {
-	k, v := []byte("Hello"), []byte("World")
-	for i := 0; i < b.N; i++ {
-		db.SetWithTTL(k, v, 1)
+func TestDB_Current(t *testing.T) {
+	reset()
+
+	assert.Equal(t, "", db.Current())
+
+	newDB, err := db.Swap("bucket1")
+	assert.NoError(t, err)
+	assert.Equal(t, "bucket1", newDB.Current())
+}
+
+func TestDB_Snapshot(t *testing.T) {
+	reset()
+
+	for _, node := range pairMatrix {
+		assert.NoError(t, db.Set(node.Key, node.Value))
 	}
+
+	reader, err := db.Snapshot()
+	assert.NoError(t, err)
+	assert.NotNil(t, reader)
+
+	time.Sleep(100 * time.Millisecond) // wait db state change
+
+	assert.NoError(t, db.Restore(reader))
+
+	for _, node := range pairMatrix {
+		value, err := db.Get(node.Key)
+		assert.NoError(t, err)
+		assert.Equal(t, node.Value, value.Data)
+	}
+}
+
+func TestDB_Close(t *testing.T) {
+	reset()
+
+	assert.NoError(t, db.Close())
+
+	// expect: timeout...
+	ShouldTimeout(t, 1*time.Second, func() {
+		db.Set(pair1.Key, pair1.Value)
+	})
+}
+
+func TestDB_PrefixScan(t *testing.T) {
+	reset()
+
+	for _, node := range pairMatrix {
+		assert.NoError(t, db.Set(node.Key, node.Value))
+	}
+
+	values, err := db.PrefixScan([]byte("K"), 0, 10)
+	assert.NoError(t, err)
+	assert.Len(t, values, len(pairMatrix))
+
+	for i, value := range values {
+		assert.Equal(t, pairMatrix[i].Value, value.Data)
+	}
+}
+
+func TestDB_PrefixSearchScan(t *testing.T) {
+	reset()
+
+	for _, node := range pairMatrix {
+		assert.NoError(t, db.Set(node.Key, node.Value))
+	}
+
+	values, err := db.PrefixSearchScan([]byte("K"), "", 0, 10)
+	assert.NoError(t, err)
+	assert.Len(t, values, len(pairMatrix))
+
+	for i, value := range values {
+		assert.Equal(t, pairMatrix[i].Value, value.Data)
+	}
+}
+
+func TestDB_Set(t *testing.T) {
+	reset()
+
+	for _, node := range pairMatrix {
+		assert.NoError(t, db.Set(node.Key, node.Value))
+	}
+}
+
+func TestDB_SetWithTTL(t *testing.T) {
+	reset()
+
+	assert.NoError(t, db.SetWithTTL(pair1.Key, pair1.Value, 3))
+
+	time.Sleep(2 * time.Second)
+	value, err := db.Get(pair1.Key)
+	assert.NoError(t, err)
+	assert.NotNil(t, value.Data)
+	assert.NotZero(t, value.TTL)
+
+	time.Sleep(2 * time.Second) // waiting expired
+	value, err = db.Get(pair1.Key)
+	assert.Error(t, err)
+	assert.Nil(t, value.Data)
+	assert.Zero(t, value.TTL)
+}
+
+func TestDB_TrySetWithTTL(t *testing.T) {
+	reset()
+
+	assert.Error(t, db.TrySetWithTTL(pair1.Key, pair1.Value, 3)) // expect: error
+	assert.NoError(t, db.TrySetWithTTL(pair2.Key, pair2.Value, 3))
+	assert.Error(t, db.TrySetWithTTL(pair2.Key, pair2.Value, 3)) // expect: error
+
+	time.Sleep(2 * time.Second)
+	value, err := db.Get(pair2.Key)
+	assert.NoError(t, err)
+	assert.NotNil(t, value.Data)
+	assert.NotZero(t, value.TTL)
+
+	time.Sleep(2 * time.Second) // waiting expired
+	value, err = db.Get(pair2.Key)
+	assert.Error(t, err)
+	assert.Nil(t, value.Data)
+	assert.Zero(t, value.TTL)
+}
+
+func TestDB_TrySet(t *testing.T) {
+	reset()
+
+	assert.Error(t, db.TrySet(pair1.Key, pair1.Value)) // expect: error
+	assert.NoError(t, db.TrySet(pair2.Key, pair2.Value))
+	assert.Error(t, db.TrySet(pair2.Key, pair2.Value)) // expect: error
+}
+
+func TestDB_Del(t *testing.T) {
+	reset()
+
+	assert.NoError(t, db.Del(pair1.Key))
+	assert.Error(t, db.Del(pair2.Key))
+
+	assert.NoError(t, db.Set(pair2.Key, pair2.Value))
+	assert.NoError(t, db.Del(pair2.Key))
 }

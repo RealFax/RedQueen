@@ -8,7 +8,7 @@ import (
 
 type roundRobinBalance[K comparable, V any] struct {
 	current atomic.Int32
-	*loadBalanceStore[K, V]
+	*store[K, V]
 }
 
 func (b *roundRobinBalance[K, V]) Next() (V, error) {
@@ -19,20 +19,20 @@ func (b *roundRobinBalance[K, V]) Next() (V, error) {
 	next := b.current.Add(1) % size
 	b.current.CompareAndSwap(b.current.Load(), next)
 
-	b.rwm.RLock()
+	b.mu.RLock()
 	nextValue := b.nodes[next].Value()
-	b.rwm.RUnlock()
+	b.mu.RUnlock()
 	return nextValue, nil
 }
 
 func (b *roundRobinBalance[K, V]) Remove(key K) bool {
-	if !b.loadBalanceStore.Remove(key) {
+	if !b.store.Remove(key) {
 		return false
 	}
 	b.current.Add(-1)
 	return true
 }
 
-func NewRoundRobin[K comparable, V any]() LoadBalance[K, V] {
-	return &roundRobinBalance[K, V]{loadBalanceStore: newLoadBalanceStore[K, V]()}
+func NewRoundRobin[K comparable, V any]() Balancer[K, V] {
+	return &roundRobinBalance[K, V]{store: newLoadBalanceStore[K, V]()}
 }

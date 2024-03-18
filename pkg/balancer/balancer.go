@@ -6,34 +6,34 @@ import (
 	"sync"
 )
 
-type Node[K comparable, V any] interface {
+type Pod[K comparable, V any] interface {
 	Key() K
 	Value() V
 }
 
-type LoadBalance[K comparable, V any] interface {
+type Balancer[K comparable, V any] interface {
 	Size() int32
-	Append(node ...Node[K, V])
+	Append(node ...Pod[K, V])
 	Remove(key K) bool
 	Next() (V, error)
 }
 
-type loadBalanceStore[K comparable, V any] struct {
-	rwm sync.RWMutex
+type store[K comparable, V any] struct {
+	mu sync.RWMutex
 
 	size   int32
 	filter *maputil.Map[K, struct{}]
-	nodes  []Node[K, V]
+	nodes  []Pod[K, V]
 }
 
-func (s *loadBalanceStore[K, V]) Size() int32 {
-	s.rwm.RLock()
+func (s *store[K, V]) Size() int32 {
+	s.mu.RLock()
 	size := s.size
-	s.rwm.RUnlock()
+	s.mu.RUnlock()
 	return size
 }
 
-func (s *loadBalanceStore[K, V]) Append(nodes ...Node[K, V]) {
+func (s *store[K, V]) Append(nodes ...Pod[K, V]) {
 	for i, node := range nodes {
 		if _, ok := s.filter.Load(node.Key()); ok {
 			nodes = append(nodes[:i], nodes[i+1:]...)
@@ -42,30 +42,30 @@ func (s *loadBalanceStore[K, V]) Append(nodes ...Node[K, V]) {
 		s.filter.Store(node.Key(), struct{}{})
 	}
 
-	s.rwm.Lock()
+	s.mu.Lock()
 	s.nodes = append(s.nodes, nodes...)
 	s.size += int32(len(nodes))
-	s.rwm.Unlock()
+	s.mu.Unlock()
 }
 
-func (s *loadBalanceStore[K, V]) Remove(key K) bool {
+func (s *store[K, V]) Remove(key K) bool {
 	if _, ok := s.filter.LoadAndDelete(key); !ok {
 		return false
 	}
 
-	s.rwm.Lock()
-	s.nodes = slices.DeleteFunc(s.nodes, func(n Node[K, V]) bool {
+	s.mu.Lock()
+	s.nodes = slices.DeleteFunc(s.nodes, func(n Pod[K, V]) bool {
 		return n.Key() == key
 	})
 	s.size -= 1
-	s.rwm.Unlock()
+	s.mu.Unlock()
 
 	return true
 }
 
-func newLoadBalanceStore[K comparable, V any]() *loadBalanceStore[K, V] {
-	return &loadBalanceStore[K, V]{
+func newLoadBalanceStore[K comparable, V any]() *store[K, V] {
+	return &store[K, V]{
 		filter: maputil.New[K, struct{}](),
-		nodes:  make([]Node[K, V], 0, 64),
+		nodes:  make([]Pod[K, V], 0, 64),
 	}
 }

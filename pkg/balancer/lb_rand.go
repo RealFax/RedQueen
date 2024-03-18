@@ -8,7 +8,7 @@ import (
 )
 
 type randomBalance[K comparable, V any] struct {
-	*loadBalanceStore[K, V]
+	*store[K, V]
 }
 
 func (b *randomBalance[K, V]) Next() (V, error) {
@@ -18,12 +18,12 @@ func (b *randomBalance[K, V]) Next() (V, error) {
 	}
 	idx, _ := rand.Int(rand.Reader, big.NewInt(int64(size)))
 
-	b.rwm.RLock()
+	b.mu.RLock()
 	nextValue := b.nodes[idx.Int64()].Value()
-	b.rwm.RUnlock()
+	b.mu.RUnlock()
 	return nextValue, nil
 }
 
-func NewRandom[K comparable, V any]() LoadBalance[K, V] {
-	return &randomBalance[K, V]{newLoadBalanceStore[K, V]()}
+func NewRandom[K comparable, V any]() Balancer[K, V] {
+	return &randomBalance[K, V]{store: newLoadBalanceStore[K, V]()}
 }

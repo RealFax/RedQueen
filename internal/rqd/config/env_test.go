@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"github.com/RealFax/RedQueen/internal/rqd/config"
+	"github.com/stretchr/testify/assert"
 	"syscall"
 	"testing"
 )
@@ -30,23 +31,23 @@ func (s *stringValue) String() string { return string(*s) }
 func TestBindEnvVar(t *testing.T) {
 	var s string
 	config.BindEnvVar(newStringValue("default", &s), "bonjour")
-	t.Log("Value:", s)
+	assert.Equal(t, "HELLO", s)
 }
 
 func TestEnvStringVar(t *testing.T) {
 	var s string
 	config.EnvStringVar(&s, "test_string", "none")
-	t.Log("Value:", s)
+	assert.Equal(t, s, "IS_STRING")
 }
 
 func TestEnvInt64Var(t *testing.T) {
 	var i int64
 	config.EnvInt64Var(&i, "test_int64", -1)
-	t.Log("Value:", i)
+	assert.Equal(t, int64(2147483648), i)
 }
 
 func TestEnvBoolVar(t *testing.T) {
 	var b bool
 	config.EnvBoolVar(&b, "test_bool", false)
-	t.Log("Value:", b)
+	assert.Equal(t, true, b)
 }
