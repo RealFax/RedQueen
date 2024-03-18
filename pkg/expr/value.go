@@ -4,9 +4,8 @@ func Pointer[T any](v T) *T {
 	return &v
 }
 
-func Zero[T any]() T {
-	var zero T
-	return zero
+func Zero[T any]() (zero T) {
+	return
 }
 
 func MustPointer[T comparable](v T) *T {
