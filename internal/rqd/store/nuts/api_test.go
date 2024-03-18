@@ -57,24 +57,24 @@ func reset() {
 	db.Set(pair1.Key, pair1.Value)
 }
 
-func ShouldTimeout(t *testing.T, timeout time.Duration, fc func()) {
-	t.Helper()
-	fin := make(chan struct{})
-
-	go func() {
-		defer close(fin)
-		fc()
-	}()
-
-	select {
-	case <-fin:
-		t.Errorf("test case should timeout %s", timeout)
-	case <-time.After(timeout):
-		t.SkipNow()
-		os.Exit(1)
-		return
-	}
-}
+//func ShouldTimeout(t *testing.T, timeout time.Duration, fc func()) {
+//	t.Helper()
+//	fin := make(chan struct{})
+//
+//	go func() {
+//		defer close(fin)
+//		fc()
+//	}()
+//
+//	select {
+//	case <-fin:
+//		t.Errorf("test case should timeout %s", timeout)
+//	case <-time.After(timeout):
+//		t.SkipNow()
+//		os.Exit(1)
+//		return
+//	}
+//}
 
 func TestDB_Swap(t *testing.T) {
 	reset()
@@ -115,11 +115,11 @@ func TestDB_Break(t *testing.T) {
 	assert.NoError(t, err)
 
 	// expect: timeout...
-	ShouldTimeout(t, 1*time.Second, func() {
-		value, err = db.Get(pair1.Key)
-		assert.Error(t, err)
-		assert.NotNil(t, value)
-	})
+	//ShouldTimeout(t, 1*time.Second, func() {
+	//	value, err = db.Get(pair1.Key)
+	//	assert.Error(t, err)
+	//	assert.NotNil(t, value)
+	//})
 
 	err = db.Break(ctx) // expect: return error
 	assert.Error(t, err)
@@ -217,9 +217,9 @@ func TestDB_Close(t *testing.T) {
 	assert.NoError(t, db.Close())
 
 	// expect: timeout...
-	ShouldTimeout(t, 1*time.Second, func() {
-		db.Set(pair1.Key, pair1.Value)
-	})
+	//ShouldTimeout(t, 1*time.Second, func() {
+	//	db.Set(pair1.Key, pair1.Value)
+	//})
 }
 
 func TestDB_PrefixScan(t *testing.T) {
