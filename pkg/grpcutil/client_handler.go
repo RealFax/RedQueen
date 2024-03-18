@@ -7,12 +7,12 @@ import (
 )
 
 type BasicAuthClient struct {
-	authKey string
+	AuthKey string
 }
 
 func (c BasicAuthClient) ctxWrap(ctx context.Context) context.Context {
 	return metadata.NewOutgoingContext(ctx, metadata.MD{
-		MetadataAuthorization: []string{c.authKey},
+		MetadataAuthorization: []string{c.AuthKey},
 	})
 }
 
@@ -38,5 +38,5 @@ func (c BasicAuthClient) Stream(
 }
 
 func NewBasicAuthClient(username, password string) *BasicAuthClient {
-	return &BasicAuthClient{authKey: BuildAuthorization(username, password)}
+	return &BasicAuthClient{AuthKey: BuildAuthorization(username, password)}
 }
