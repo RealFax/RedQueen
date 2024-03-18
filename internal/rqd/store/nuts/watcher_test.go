@@ -1,81 +1,53 @@
 package nuts_test
 
 import (
-	"context"
 	"github.com/RealFax/RedQueen/internal/rqd/store/nuts"
-	"strconv"
-	"sync"
+	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 var (
-	keys = [][]byte{
-		[]byte("KEY_1"),
-		[]byte("KEY_2"),
-		[]byte("KEY_3"),
-		[]byte("KEY_4"),
-		[]byte("KEY_5"),
-		[]byte("KEY_6"),
-		[]byte("KEY_7"),
-		[]byte("KEY_8"),
-		[]byte("KEY_9"),
-		[]byte("KEY_10"),
-	}
+	watcher = &nuts.Watcher{}
 )
 
-func TestWatcher(t *testing.T) {
-	watcher := &nuts.Watcher{}
+func TestWatcher_UseTarget(t *testing.T) {
+	child := watcher.UseTarget("rqd")
+	assert.NotNil(t, child)
+	assert.Equal(t, "rqd", child.Namespace)
 
-	child := watcher.UseTarget("RedQueen")
+	child2 := watcher.UseTarget("rqd2")
+	assert.NotNil(t, child2)
+	assert.Equal(t, "rqd2", child2.Namespace)
+}
 
-	ctx, cancel := context.WithCancel(context.Background())
+func TestWatcherChild_Watch(t *testing.T) {
+	child := watcher.UseTarget("rqd")
+	notifier := child.Watch(pair1.Key)
+	assert.NotNil(t, notifier)
+	defer func() {
+		assert.NoError(t, notifier.Close())
+	}()
 
-	wg := sync.WaitGroup{}
-	for client := 0; client < 3; client++ {
-		wg.Add(1)
-		clientID := client
-		go func() {
-			t.Logf("Start recv, ClientID: %d", clientID)
-			notify := child.Watch(keys[0])
-			prefixNotify := child.WatchPrefix([]byte("KEY"))
-			wg.Done()
-			for {
-				select {
-				case val := <-notify.Values:
-					t.Logf("ClientID: %d, sequence: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
-						clientID,
-						val.Seq,
-						val.Timestamp,
-						val.TTL,
-						val.Key,
-						*val.Value,
-					)
-				case val := <-prefixNotify.Values:
-					t.Logf("[Prefix] ClientID: %d, sequence: %d, Timestamp: %d, TTL: %d, Key: %s, Value: %s",
-						clientID,
-						val.Seq,
-						val.Timestamp,
-						val.TTL,
-						val.Key,
-						*val.Value,
-					)
-				case <-ctx.Done():
-					notify.Close()
-					t.Logf("Stop recv, ClientID: %d", clientID)
-					return
-				}
-			}
-		}()
-	}
-
-	wg.Wait()
 	for i := 0; i < 10; i++ {
-		child.Update(keys[i], []byte("VALUE_"+strconv.Itoa(i)), 60)
-		time.Sleep(time.Millisecond * 300)
+		child.Update(pair1.Key, pair1.Value, 0)
+		value := <-notifier.Notify()
+		assert.NotNil(t, value.Value)
+		assert.Equal(t, pair1.Value, *value.Value)
 	}
+}
 
-	cancel()
+func TestWatcherChild_WatchPrefix(t *testing.T) {
+	child := watcher.UseTarget("rqd")
+	notifier := child.WatchPrefix([]byte("K"))
+	assert.NotNil(t, notifier)
+	defer func() {
+		assert.NoError(t, notifier.Close())
+	}()
 
-	time.Sleep(time.Second * 1)
+	for _, node := range pairMatrix {
+		child.Update(node.Key, node.Value, 0)
+		value := <-notifier.Notify()
+		assert.NotNil(t, value.Value)
+		assert.Equal(t, node.Value, *value.Value)
+	}
 }

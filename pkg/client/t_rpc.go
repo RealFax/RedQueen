@@ -21,7 +21,7 @@ type ConnectionManager struct {
 	state    atomic.Bool
 	ctx      context.Context
 	endpoint string
-	balancer balancer.LoadBalance[string, *grpc.ClientConn]
+	balancer balancer.Balancer[string, *grpc.ClientConn]
 }
 
 func (m *ConnectionManager) Target() string { return m.endpoint }
@@ -55,7 +55,7 @@ func NewConnectionManager(ctx context.Context, endpoint string, maxConn int, opt
 	manager := &ConnectionManager{
 		ctx:      ctx,
 		endpoint: endpoint,
-		balancer: func() balancer.LoadBalance[string, *grpc.ClientConn] {
+		balancer: func() balancer.Balancer[string, *grpc.ClientConn] {
 			switch currentBalancer {
 			case RoundRand:
 				return balancer.NewRandom[string, *grpc.ClientConn]()

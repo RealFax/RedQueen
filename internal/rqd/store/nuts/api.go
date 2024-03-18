@@ -224,9 +224,6 @@ func (s *DB) Snapshot() (io.Reader, error) {
 	}
 
 	_ = db.Merge()
-	//if err = db.Merge(); err != nil {
-	//	return nil, errors.Wrap(err, "fail snapshot, merge error")
-	//}
 
 	buf := &bytes.Buffer{}
 	return buf, db.View(func(tx *nutsdb.Tx) error {
