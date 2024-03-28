@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"github.com/RealFax/RedQueen/internal/rqd/config"
 	"github.com/RealFax/RedQueen/internal/rqd/store"
+	"github.com/RealFax/RedQueen/internal/version"
 	"github.com/RealFax/RedQueen/pkg/dlocker"
 	"github.com/RealFax/RedQueen/pkg/expr"
 	"github.com/RealFax/RedQueen/pkg/grpcutil"
@@ -173,7 +174,7 @@ func (s *Server) registerHttpServer() {
 	router.NotFound = httputil.WrapE(func(w http.ResponseWriter, r *http.Request) error {
 		return httputil.NewStatus(http.StatusNotFound, 0, "Not Found")
 	})
-	router.PanicHandler = func(w http.ResponseWriter, _ *http.Request, _ interface{}) {
+	router.PanicHandler = func(w http.ResponseWriter, _ *http.Request, _ any) {
 		httputil.Any(http.StatusServiceUnavailable, 0).Message("Service Unavailable").Ok(w)
 	}
 
@@ -190,7 +191,10 @@ func (s *Server) registerHttpServer() {
 	router.Handler(http.MethodGet, "/action/:bucket/scan", httputil.WrapE(httpHandlers.PrefixScan))
 	router.Handler(http.MethodPut, "/action/:bucket/try", httputil.WrapE(httpHandlers.TrySet))
 
-	s.httpServer.Handler = router
+	s.httpServer.Handler = httputil.UseMiddleware(router, func(w http.ResponseWriter, r *http.Request) bool {
+		w.Header().Add("Server", version.String())
+		return true
+	})
 
 	if s.cfg.BasicAuth != nil && len(s.cfg.BasicAuth) != 0 {
 		// use basic-auth
