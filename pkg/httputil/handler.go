@@ -26,6 +26,24 @@ func WrapE(fc func(w http.ResponseWriter, r *http.Request) error) http.HandlerFu
 	}
 }
 
+type Middleware struct {
+	handler http.Handler
+	fc      func(w http.ResponseWriter, r *http.Request) bool
+}
+
+func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if m.fc(w, r) {
+		m.handler.ServeHTTP(w, r)
+	}
+}
+
+func UseMiddleware(next http.Handler, fc func(w http.ResponseWriter, r *http.Request) bool) http.Handler {
+	return &Middleware{
+		handler: next,
+		fc:      fc,
+	}
+}
+
 type BasicAuthFunc func(username, password string) bool
 type basicAuth struct {
 	next   http.Handler

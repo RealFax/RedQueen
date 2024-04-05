@@ -142,3 +142,7 @@ admin = "123456"
 - google uuid [(BSD-3-Clause License)](https://github.com/google/uuid/blob/master/LICENSE)
 - grpc [(Apache License 2.0)](https://github.com/grpc/grpc-go/blob/master/LICENSE)
 - protobuf [(BSD-3-Clause License)](https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE)
+
+## 致谢
+
+<a href="https://jb.gg/OpenSourceSupport"><img width="100px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png"/></a>
